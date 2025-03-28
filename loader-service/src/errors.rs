@@ -16,4 +16,7 @@ pub enum AppError {
 
     #[error("Unexpected error: {0}")]
     Unexpected(String),
+
+    #[error("Missing environment variable: {0}")]
+    MissingEnvVar(String),
 }
