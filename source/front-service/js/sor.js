@@ -1,6 +1,7 @@
 const API_URL = "http://127.0.0.1:3000/api/v1/sor";
 const COUNTRIES_API = "http://127.0.0.1:3000/api/v1/countries";
 const OPERATORS_API = "http://127.0.0.1:3000/api/v1/operators/by-country";
+const ROUTAGE_TYPES_API = "http://127.0.0.1:3000/api/v1/routagetypes";
 
 let editingSORId = null; // track SOR being edited
 
@@ -44,6 +45,23 @@ async function loadCountries() {
     });
 }
 
+// Load routage types into select
+async function loadRoutageTypes(selectedId = null) {
+    const res = await fetch(ROUTAGE_TYPES_API);
+    const routageTypes = await res.json();
+    const select = document.getElementById("routageTypeSelect");
+    select.innerHTML = `<option value="" disabled selected>Select a routage type</option>`;
+    routageTypes.forEach(rt => {
+        const option = document.createElement("option");
+        option.value = rt.routage_type_id;
+        option.textContent = rt.routage_type_name;
+        if (selectedId && selectedId === rt.routage_type_id) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    });
+}
+
 // Load operators when country changes
 document.getElementById("countrySelect").addEventListener("change", async function() {
     if (editingSORId) return; // don't reload operators when editing
@@ -55,7 +73,7 @@ document.getElementById("countrySelect").addEventListener("change", async functi
     operatorSelect.innerHTML = `<option value="" disabled selected>Select an operator</option>`;
     operators.forEach(op => {
         const option = document.createElement("option");
-        option.value = op.operator_name;
+        option.value = op.operator_id; // use operator_id for backend
         option.textContent = op.operator_name;
         operatorSelect.appendChild(option);
     });
@@ -68,6 +86,10 @@ function openCreateModal() {
     form.reset();
     document.getElementById("countrySelect").disabled = false;
     document.getElementById("operatorSelect").disabled = false;
+
+    // reload routage types for fresh dropdown
+    loadRoutageTypes();
+
     $("#sorModal").modal("show");
 }
 
@@ -81,16 +103,16 @@ async function editSOR(id) {
     const sor = await res.json();
     editingSORId = id;
 
-    // Fill modal
     const countrySelect = document.getElementById("countrySelect");
     countrySelect.innerHTML = `<option value="${sor.country_id}" selected>${sor.country_name}</option>`;
     countrySelect.disabled = true;
 
     const operatorSelect = document.getElementById("operatorSelect");
-    operatorSelect.innerHTML = `<option value="${sor.operator_name}" selected>${sor.operator_name}</option>`;
+    operatorSelect.innerHTML = `<option value="${sor.operator_id}" selected>${sor.operator_name}</option>`;
     operatorSelect.disabled = true;
 
-    document.getElementById("routageTypeInput").value = sor.routage_type_name;
+    await loadRoutageTypes(sor.routage_type_id);
+
     document.getElementById("barringCheck").checked = sor.barring;
     document.getElementById("rateInput").value = sor.rate;
 
@@ -100,20 +122,23 @@ async function editSOR(id) {
 // Create/Update SOR
 document.getElementById("sorForm").addEventListener("submit", async (e) => {
     e.preventDefault();
-    const form = e.target;
+
+    const countrySelect = document.getElementById("countrySelect");
+    const operatorSelect = document.getElementById("operatorSelect");
+    const routageSelect = document.getElementById("routageTypeSelect");
 
     const payload = {
-        country_name: form.country_name.options[form.country_name.selectedIndex].text,
-        operator_name: form.operator_name.value,
-        routage_type_name: form.routage_type_name.value,
+        country_name: countrySelect.options[countrySelect.selectedIndex].text,
+        operator_name: operatorSelect.options[operatorSelect.selectedIndex].text,
+        routage_type_id: parseInt(routageSelect.value),
+        routage_type_name: routageSelect.options[routageSelect.selectedIndex].text,
         barring: document.getElementById("barringCheck").checked,
-        rate: form.rate.value,
+        rate: document.getElementById("rateInput").value,
         created_by: "system",
         updated_by: "system"
     };
 
     if (editingSORId) {
-        // Update existing SOR
         const res = await fetch(`${API_URL}/${editingSORId}`, {
             method: "PUT",
             headers: {"Content-Type": "application/json"},
@@ -125,16 +150,12 @@ document.getElementById("sorForm").addEventListener("submit", async (e) => {
             loadSOR();
             alert("SOR updated successfully!");
             editingSORId = null;
-            form.reset();
-            document.getElementById("countrySelect").disabled = false;
-            document.getElementById("operatorSelect").disabled = false;
         } else {
             const err = await res.text();
             alert("Error: " + err);
         }
 
     } else {
-        // Create new SOR
         const res = await fetch(API_URL, {
             method: "POST",
             headers: {"Content-Type": "application/json"},
@@ -142,7 +163,7 @@ document.getElementById("sorForm").addEventListener("submit", async (e) => {
         });
 
         if (res.ok) {
-            form.reset();
+            $("#sorModal").modal("hide");
             loadSOR();
             alert("SOR created successfully!");
         } else {
@@ -167,4 +188,5 @@ async function deleteSOR(id) {
 
 // Initial load
 loadCountries();
+loadRoutageTypes();
 loadSOR();
