@@ -17,7 +17,7 @@ pub struct MetricRequest {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Dataset {
     #[serde(default = "default_granularity")]
-    pub granularity: String, // optional, default "Daily"
+    pub granularity: String,
 
     pub aggregation: String,
     pub direction: String,
@@ -30,7 +30,7 @@ fn default_granularity() -> String {
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct TimePeriod {
     #[serde(default)]
-    pub window: i32, // default 0
+    pub window: i32,
     #[serde(default)]
     pub from: Option<String>, // default null
     #[serde(default)]

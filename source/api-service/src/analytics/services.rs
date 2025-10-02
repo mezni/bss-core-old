@@ -11,7 +11,7 @@ impl MetricsService {
         pool: &Pool,
         req: MetricRequest,
     ) -> Result<serde_json::Value, AppError> {
-        match req.dataset.direction.as_str() {
+        match req.dataset.aggregation.as_str() {
             "Global" => {
                 let metrics = MetricsRepository::get_global_metrics(
                     pool,
@@ -24,7 +24,7 @@ impl MetricsService {
                 .await?;
 
                 Ok(json!({
-                    "direction": "Global",
+                    "aggregation": "Global",
                     "metrics": metrics
                 }))
             }
@@ -43,11 +43,11 @@ impl MetricsService {
                 .await?;
 
                 Ok(json!({
-                    "direction": "Country",
+                    "aggregation": "Country",
                     "metrics": metrics
                 }))
             }
-            _ => Err(AppError::bad_request("Invalid direction")),
+            _ => Err(AppError::bad_request("Invalid aggregation")),
         }
     }
 }
