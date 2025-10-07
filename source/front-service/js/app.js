@@ -1,70 +1,50 @@
-// Function to load HTML content into specified element by ID
-function loadHTMLContent(url, elementId) {
-    fetch(url)
-        .then(response => response.text()) // Get the text content of the HTML file
-        .then(html => {
-            const element = document.getElementById(elementId); // Get the target element by ID
-            element.innerHTML = html; // Inject the HTML into the element
-        })
-        .catch(error => {
-            console.error('Error loading HTML content:', error);
-        });
-}
+/**
+ * AdminLTE Starter App
+ * Handles loading header, footer, sidebar, and page content dynamically
+ */
 
-// Function to dynamically load page content and set active class
-function loadPage(page, linkElement) {
-    const content = document.getElementById('main-content');
+document.addEventListener('DOMContentLoaded', async () => {
+  console.log('AdminLTE Starter initialized');
 
-    // Remove the active class from all links
-    const allLinks = document.querySelectorAll('.nav-link');
-    allLinks.forEach(link => {
-        link.classList.remove('active');
-    });
+  await loadLayoutPart('pages/header.html', '#header');
+  await loadLayoutPart('pages/sidebar.html', '#sidebar');
+  await loadLayoutPart('pages/footer.html', '#footer');
 
-    // Add the active class to the clicked link
-    linkElement.classList.add('active');
-
-    // Load the content based on the selected page
-    switch (page) {
-        case 'dashboard':
-            fetch('pages/dashboard.html')
-                .then(response => response.text())
-                .then(html => {
-                    content.innerHTML = html;
-                    initializeDashboard(); // Ensure this function exists to initialize the dashboard
-                });
-            break;
-        
-        case 'roamin':
-            fetch('pages/roamin.html')
-                .then(response => response.text())
-                .then(html => {
-                    content.innerHTML = html;
-                    loadGlobalRoamersInData(); // Call the function to load Roam IN data
-                    loadGlobalRoamersInByCountryData();
-                });
-            break;
-
-        case 'roamout': // New case for Roamers OUT
-            fetch('pages/roamout.html')
-                .then(response => response.text())
-                .then(html => {
-                    content.innerHTML = html;
-                    loadGlobalRoamersOutData(); // Call the function to load Roam OUT data
-                    loadGlobalRoamersOutByCountryData();
-                });
-            break;
-        
-        default:
-            content.innerHTML = "<h3>Page not found!</h3>";
-            break;
-    }
-}
-
-// Load Header, Sidebar, Footer, and Dashboard on page load
-document.addEventListener('DOMContentLoaded', () => {
-    loadHTMLContent('pages/header.html', 'header-placeholder');
-    loadHTMLContent('pages/sidebar.html', 'sidebar-placeholder');
-    loadHTMLContent('pages/footer.html', 'footer-placeholder');
-    loadHTMLContent('pages/dashboard.html', 'main-content'); // Load dashboard on startup
+  loadPage('dashboard'); // default page
 });
+
+// Load partials like header, sidebar, footer
+async function loadLayoutPart(url, selector) {
+  try {
+    const response = await fetch(url);
+    const html = await response.text();
+    document.querySelector(selector).innerHTML = html;
+  } catch (err) {
+    console.error(`Failed to load ${url}:`, err);
+  }
+}
+
+// Load pages dynamically
+async function loadPage(page) {
+  const content = document.getElementById('content-area');
+  try {
+    const response = await fetch(`pages/${page}.html`);
+    const html = await response.text();
+    content.innerHTML = html;
+    document.getElementById('page-title').textContent = page.charAt(0).toUpperCase() + page.slice(1);
+
+    // Initialize page-specific scripts
+if (page === 'countries') {
+  const script = document.createElement('script');
+  script.src = 'js/countries.js';
+  script.onload = () => {
+    CountriesApp.init(); // <-- explicitly initialize after loading
+  };
+  document.body.appendChild(script);
+}
+
+
+  } catch (err) {
+    content.innerHTML = `<div class="alert alert-danger">Page not found: ${page}</div>`;
+  }
+}
