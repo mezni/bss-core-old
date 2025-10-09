@@ -13,9 +13,6 @@ impl MetricsService {
     ) -> Result<serde_json::Value, AppError> {
         let result_json = MetricsRepository::get_metrics(pool, &req).await?;
 
-        Ok(json!({
-            "data": result_json,
-            "status": "success"
-        }))
+        Ok(result_json)
     }
 }
