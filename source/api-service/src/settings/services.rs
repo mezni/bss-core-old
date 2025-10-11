@@ -1,8 +1,14 @@
 use crate::core::errors::AppError;
-use crate::settings::models::{Country, CountryDTO, CreateCountry, UpdateCountry};
-use crate::settings::repositories::CountryRepository;
+use crate::settings::models::{
+    Country, CountryDTO, CreateCountry, CreateOperator, Operator, OperatorDTO, UpdateCountry,
+    UpdateOperator,
+};
+use crate::settings::repositories::{CountryRepository, OperatorRepository};
 use deadpool_postgres::Pool;
 
+// -------------------------
+// Country Service
+// -------------------------
 pub struct CountryService;
 
 impl CountryService {
@@ -47,5 +53,18 @@ impl CountryService {
     /// Delete a country by ID
     pub async fn delete(pool: &Pool, id: i32) -> Result<(), AppError> {
         CountryRepository::delete(pool, id).await
+    }
+}
+
+// -------------------------
+// Operator Service
+// -------------------------
+pub struct OperatorService;
+
+impl OperatorService {
+    /// Get all operators
+    pub async fn get_all(pool: &Pool) -> Result<Vec<OperatorDTO>, AppError> {
+        let operators = OperatorRepository::get_all(pool).await?;
+        Ok(operators.into_iter().map(OperatorDTO::from).collect())
     }
 }
