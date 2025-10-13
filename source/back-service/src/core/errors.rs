@@ -1,41 +1,74 @@
+use deadpool_postgres;
+use std::error::Error;
 use std::fmt;
-use thiserror::Error;
+use std::io;
+use tokio_postgres;
 
-#[derive(Error, Debug)]
+/// Custom application error type
+#[derive(Debug)]
 pub enum AppError {
-    #[error("IO error: {0}")]
-    Io(#[from] std::io::Error),
-    
-    #[error("Directory not found: {0}")]
-    DirectoryNotFound(String),
-    
-    #[error("Path is not a directory: {0}")]
-    NotADirectory(String),
-    
-    #[error("File not found: {0}")]
-    FileNotFound(String),
-    
-    #[error("Configuration error: {0}")]
-    Config(String),
-    
-    #[error("Parse error: {0}")]
-    Parse(String),
-    
-    #[error("Validation error: {0}")]
-    Validation(String),
-    
-    #[error("Network error: {0}")]
-    Network(String),
-    
-    #[error("Database error: {0}")]
-    Database(String),
-    
-    #[error("Authentication error: {0}")]
-    Auth(String),
-    
-    #[error("Permission denied: {0}")]
-    Permission(String),
-    
-    #[error("Unknown error: {0}")]
-    Unknown(String),
+    Io(io::Error),
+    Db(tokio_postgres::Error),
+    Pool(deadpool_postgres::PoolError),
+    Csv(csv_async::Error),
+    Yaml(serde_yaml::Error),
+    Other(String),
+}
+
+impl fmt::Display for AppError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AppError::Io(e) => write!(f, "IO error: {}", e),
+            AppError::Db(e) => write!(f, "DB error: {}", e),
+            AppError::Pool(e) => write!(f, "Pool error: {}", e),
+            AppError::Csv(e) => write!(f, "CSV error: {}", e),
+            AppError::Yaml(e) => write!(f, "YAML error: {}", e),
+            AppError::Other(s) => write!(f, "Other error: {}", s),
+        }
+    }
+}
+
+impl Error for AppError {}
+
+/// Conversion implementations
+impl From<io::Error> for AppError {
+    fn from(err: io::Error) -> Self {
+        AppError::Io(err)
+    }
+}
+
+impl From<tokio_postgres::Error> for AppError {
+    fn from(err: tokio_postgres::Error) -> Self {
+        AppError::Db(err)
+    }
+}
+
+impl From<deadpool_postgres::PoolError> for AppError {
+    fn from(err: deadpool_postgres::PoolError) -> Self {
+        AppError::Pool(err)
+    }
+}
+
+impl From<csv_async::Error> for AppError {
+    fn from(err: csv_async::Error) -> Self {
+        AppError::Csv(err)
+    }
+}
+
+impl From<serde_yaml::Error> for AppError {
+    fn from(err: serde_yaml::Error) -> Self {
+        AppError::Yaml(err)
+    }
+}
+
+impl From<String> for AppError {
+    fn from(err: String) -> Self {
+        AppError::Other(err)
+    }
+}
+
+impl From<&str> for AppError {
+    fn from(err: &str) -> Self {
+        AppError::Other(err.to_string())
+    }
 }

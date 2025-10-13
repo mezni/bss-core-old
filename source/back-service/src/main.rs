@@ -1,25 +1,20 @@
 mod core;
+mod services;
 
-use core::errors::AppError;
-use core::logger::Logger;
-use std::fs;
-use std::path::Path;
+use crate::core::db::Db;
+use crate::core::logger::Logger;
+use crate::core::errors::AppError;
 
 
 #[tokio::main]
 async fn main() -> Result<(), AppError> {
-    Logger::init();    
-    Logger::info("Starting directory listing process");
-    let pool = core::db::Db::create_pool();
+    // Initialize logger
+    Logger::init();
+    Logger::info("Starting application");
 
-    Logger::info(&format!("Reading directory: {}", dir_path));
-    
-    let file_loader = services::loader::FileLoader::new(db);
+    // Create PostgreSQL pool
+    let pool = Db::create_pool();
 
-    let dir_path = "../../WORK/INPUT/RIN/";
-    
-    let summary = file_loader.process_directory(dir_path).await?;
-
-    Logger::info("Process completed successfully");
+    Logger::info("Application finished");
     Ok(())
 }
