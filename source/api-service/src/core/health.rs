@@ -1,17 +1,16 @@
-// core/health.rs
-use crate::core::errors::AppError;
-use crate::core::logger::Logger;
-use actix_web::{HttpResponse, get, web};
-use deadpool_postgres::Pool;
+use actix_web::{HttpResponse, Responder, get, web};
+use sqlx::PgPool;
 
 #[get("/health")]
-pub async fn health(pool: web::Data<Pool>) -> Result<HttpResponse, AppError> {
-    Logger::debug("call /health");
-    let client = pool.get().await?;
-    client.query_one("SELECT 1", &[]).await?;
+async fn health_check(db: web::Data<PgPool>) -> impl Responder {
+    // Optional: run a quick DB check
+    if let Err(e) = sqlx::query("SELECT 1").execute(db.get_ref()).await {
+        return HttpResponse::InternalServerError().body(format!("❌ DB connection error: {}", e));
+    }
 
-    Ok(HttpResponse::Ok().json(serde_json::json!({
-        "status": "healthy",
-        "database": "connected"
-    })))
+    HttpResponse::Ok().body("✅ Server and DB are up!")
+}
+
+pub fn config(cfg: &mut web::ServiceConfig) {
+    cfg.service(health_check);
 }
