@@ -63,7 +63,7 @@ impl MetricsRequest {
                 | "country"
                 | "operator"
                 | "subscriber"
-                | "performance"
+                | "sor_performance"
                 | "alerts"
                 | "notification"
         ) {
