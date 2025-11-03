@@ -68,6 +68,14 @@ impl OperatorService {
             )))
     }
 
+    // NEW: Get operators by country ID
+    pub async fn get_by_country_id(
+        pool: &PgPool,
+        country_id: i32,
+    ) -> Result<Vec<Operator>, AppError> {
+        OperatorRepository::get_by_country_id(pool, country_id).await
+    }
+
     pub async fn create(pool: &PgPool, data: CreateOperator) -> Result<Operator, AppError> {
         OperatorRepository::create(pool, data).await
     }

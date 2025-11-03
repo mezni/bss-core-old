@@ -8,7 +8,7 @@ use crate::services::scheduler;
 async fn main() -> Result<(), AppError> {
     Logger::init();
     Logger::info("App started");
-//    let config = AppConfig::read("../../config.yaml")?;
+    //    let config = AppConfig::read("../../config.yaml")?;
     let config = AppConfig::read("./config.yaml")?;
 
     if let Err(err) = scheduler::run(config).await {

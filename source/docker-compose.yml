@@ -59,6 +59,37 @@ services:
     networks:
       - gamma_network  
 
+  api-service:
+    build:
+      context: .
+      dockerfile: ./source/api-service/Dockerfile
+    image: gamma/api-service:latest
+    container_name: api-service
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./.env:/app/.env 
+    working_dir: /app
+    environment:
+      - RUST_LOG=info
+    networks:
+      - gamma_network  
+
+  front-service:
+    build:
+      context: ./source/front-service
+      dockerfile: Dockerfile
+    image: gamma/front-service:latest
+    container_name: front-service
+    working_dir: /app
+    ports:
+      - "8080:80"
+    restart: always
+    environment:
+      - RUST_LOG=info
+    networks:
+      - gamma_network  
+
 volumes:
   roamdb_data:
 

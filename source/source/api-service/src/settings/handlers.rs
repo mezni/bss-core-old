@@ -1,19 +1,7 @@
 use crate::core::errors::AppError;
 use crate::settings::models::{
-    Country,
-    CreateCountry,
-    CreateNetwork,
-    CreateOperator,
-    CreatePrefix,
-    CreateSorPlan,
-    Network,
-    Operator,
-    Prefix,
-    SorPlan,
-    UpdateCountry,
-    UpdateNetwork,
-    UpdateOperator,
-    UpdatePrefix, // <--- Added Prefix models
+    Country, CreateCountry, CreateNetwork, CreateOperator, CreatePrefix, CreateSorPlan, Network,
+    Operator, Prefix, SorPlan, UpdateCountry, UpdateNetwork, UpdateOperator, UpdatePrefix,
     UpdateSorPlan,
 };
 use crate::settings::services::{
@@ -42,6 +30,10 @@ pub fn config(cfg: &mut web::ServiceConfig) {
         web::scope("/settings/operators")
             .route("", web::get().to(get_all_operators))
             .route("/{id}", web::get().to(get_operator_by_id))
+            .route(
+                "/country/{country_id}",
+                web::get().to(get_operators_by_country),
+            ) // <-- Added this line
             .route("", web::post().to(create_operator))
             .route("/{id}", web::put().to(update_operator))
             .route("/{id}", web::delete().to(delete_operator)),
@@ -81,15 +73,6 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .route("", web::post().to(create_sor_plan))
             .route("/{id}", web::put().to(update_sor_plan))
             .route("/{id}", web::delete().to(delete_sor_plan)),
-    );
-
-    cfg.service(
-        web::scope("/settings/prefixes")
-            .route("", web::get().to(get_all_prefixes))
-            .route("/{id}", web::get().to(get_prefix_by_id))
-            .route("", web::post().to(create_prefix))
-            .route("/{id}", web::put().to(update_prefix))
-            .route("/{id}", web::delete().to(delete_prefix)),
     );
 }
 
@@ -149,6 +132,16 @@ async fn get_operator_by_id(
 ) -> Result<HttpResponse, AppError> {
     let operator = OperatorService::get_by_id(pool.get_ref(), path.into_inner()).await?;
     Ok(HttpResponse::Ok().json(operator))
+}
+
+// NEW: Get operators by country ID
+async fn get_operators_by_country(
+    pool: web::Data<PgPool>,
+    path: web::Path<i32>,
+) -> Result<HttpResponse, AppError> {
+    let country_id = path.into_inner();
+    let operators = OperatorService::get_by_country_id(pool.get_ref(), country_id).await?;
+    Ok(HttpResponse::Ok().json(operators))
 }
 
 async fn create_operator(

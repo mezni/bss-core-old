@@ -67,7 +67,6 @@ pub async fn archive_file(
     .map_err(|e| AppError::Other(format!("Task join error: {}", e)))?
 }
 
-
 pub fn get_files(
     directory: &Path,
     pattern: Option<&str>,
@@ -105,9 +104,10 @@ pub fn get_files(
             .to_string_lossy()
             .into_owned();
 
-        if file_name != "status.txt" && regex
-            .as_ref()
-            .map_or(true, |regex| regex.is_match(&file_name))
+        if file_name != "status.txt"
+            && regex
+                .as_ref()
+                .map_or(true, |regex| regex.is_match(&file_name))
         {
             files.push(file_name);
             if files.len() >= file_limit {

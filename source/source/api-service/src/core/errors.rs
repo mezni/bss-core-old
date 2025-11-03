@@ -22,15 +22,15 @@ pub enum AppError {
     #[error("Invalid request: {0}")]
     BadRequest(String),
 
-    #[error("Resource not found")]
-    NotFound,
+    #[error("Resource not found: {0}")]
+    NotFound(String),
 
     // ───── Authentication/Authorization Errors ─────
-    #[error("Unauthorized")]
-    Unauthorized,
+    #[error("Unauthorized: {0}")]
+    Unauthorized(String),
 
-    #[error("Forbidden")]
-    Forbidden,
+    #[error("Forbidden: {0}")]
+    Forbidden(String),
 
     // ───── Internal Errors ─────
     #[error("Internal server error: {0}")]
@@ -45,16 +45,13 @@ impl ResponseError for AppError {
             AppError::BadRequest(msg) => {
                 HttpResponse::BadRequest().json(error_body("Bad Request", msg))
             }
-            AppError::NotFound => HttpResponse::NotFound().json(error_body(
-                "Not Found",
-                "The requested resource was not found",
-            )),
-            AppError::Unauthorized => HttpResponse::Unauthorized()
-                .json(error_body("Unauthorized", "Authentication required")),
-            AppError::Forbidden => HttpResponse::Forbidden().json(error_body(
-                "Forbidden",
-                "You do not have permission to access this resource",
-            )),
+            AppError::NotFound(msg) => HttpResponse::NotFound().json(error_body("Not Found", msg)),
+            AppError::Unauthorized(msg) => {
+                HttpResponse::Unauthorized().json(error_body("Unauthorized", msg))
+            }
+            AppError::Forbidden(msg) => {
+                HttpResponse::Forbidden().json(error_body("Forbidden", msg))
+            }
 
             // ───── System & Database Errors ─────
             AppError::Sqlx(err) => {
