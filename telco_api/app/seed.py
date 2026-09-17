@@ -60,8 +60,8 @@ def run_seed():
 
             # Assign 1 to 2 telecom lines per subscriber
             for _ in range(random.randint(1, 2)):
-                msisdn = f"+1{fake.numeric_regex(pattern='##########')}"
-                iccid = f"8901410{fake.numeric_regex(pattern='#############')}"
+                msisdn = f"+1{fake.numerify('##########')}"
+                iccid = f"8901410{fake.numerify('#############')}"
                 line = models.TelecomLineModel(
                     msisdn=msisdn,
                     iccid=iccid,
