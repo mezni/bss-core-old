@@ -94,7 +94,7 @@ def run_seed():
             brand, model_name = random.choice(brands_models)
 
             device = models.DeviceModel(
-                imei_esn=fake.numeric_regex(pattern="###############"),
+                imei_esn=fake.numerify("###############"),
                 brand=brand,
                 model_name=model_name,
                 device_type=random.choice(device_types),
