@@ -191,7 +191,7 @@ def line_summary(
         .all()
     )
     return {
-        str(row[0]): {"lines": row[1], "data_usage_gb": round(row[2], 2)}
+        row[0].value: {"lines": row[1], "data_usage_gb": round(row[2], 2)}
         for row in rows
     }
 

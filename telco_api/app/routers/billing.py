@@ -154,7 +154,7 @@ def _billing_overview(db: Session) -> dict:
         .all()
     )
     return {
-        str(row[0]): {"invoices": row[1], "total_amount": round(row[2], 2)}
+        row[0].value: {"invoices": row[1], "total_amount": round(row[2], 2)}
         for row in by_status
     }
 
