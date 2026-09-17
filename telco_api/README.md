@@ -16,6 +16,11 @@ python -m app.seed
 
 # Run the API
 uvicorn app.main:app --reload
+# ...or with a custom port:
+uvicorn app.main:app --port 9000
+# ...or run the module directly (--port arg or PORT env var, default 8000):
+.venv/bin/python -m app.main --port 9000
+PORT=9100 .venv/bin/python -m app.main
 ```
 
 Interactive docs: http://127.0.0.1:8000/docs

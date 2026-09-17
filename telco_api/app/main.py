@@ -37,3 +37,21 @@ def root():
         "docs": "/docs",
         "token": "/token",
     }
+
+
+if __name__ == "__main__":
+    import os
+    import sys
+
+    from uvicorn import Config, Server
+
+    try:
+        port = int(
+            sys.argv[sys.argv.index("--port") + 1]
+            if "--port" in sys.argv
+            else os.getenv("PORT", "8000")
+        )
+    except (ValueError, IndexError):
+        port = 8000
+
+    Server(Config(app, host="127.0.0.1", port=port)).run()
