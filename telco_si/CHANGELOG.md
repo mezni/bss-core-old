@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Feature Domain | Key Objectives |
 |---------|----------------|----------------|
+| 0.0.2   | Foundation | Dependencies, Actix Web server, health endpoint |
 | 0.0.1   | Foundation | Project scaffold, DDD structure, dependencies, config, entry point |
 
 ### Legend
@@ -17,6 +18,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Key Objectives: main deliverables scoped to that version.
 
 ## [Unreleased]
+
+## [0.0.2] - 2026-09-19
+
+### Added
+
+- Web/API dependencies: `actix-web`, `tokio` (macros, rt-multi-thread), `serde` (derive), `serde_json`.
+- Observability and error-handling dependencies: `anyhow`, `thiserror`, `tracing`, `tracing-subscriber` (fmt, env-filter).
+- Utility and model dependencies: `uuid` (v4, serde), `chrono` (serde).
+- Database dependency: `sqlx` 0.9 with `runtime-tokio`, `sqlite`, `macros`, `migrate`, `chrono`, `uuid`.
+- Actix Web entry point (`main.rs`) replacing the hello-world stub.
+- `GET /health` endpoint returning `{"status": "ok"}`.
 
 ## [0.0.1] - 2026-09-19
 
@@ -30,7 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned roadmap
 
-- Phase 1 — Foundation: Cargo config, Actix Web, Tokio, SQLx + SQLite (WAL + foreign keys), config loader, entry point, health endpoints, error-handling conventions, logging/tracing.
+- Phase 1 — Foundation: Cargo config, Actix Web, Tokio, SQLx + SQLite (WAL + foreign keys), config loader, entry point, health endpoints, error-handling conventions, logging/tracing. (in progress)
 - Phase 2 — Subscriber context.
 - Phase 3 — Inventory (MSISDN, SIM/IMSI).
 - Phase 4 — Device (IMEI).
