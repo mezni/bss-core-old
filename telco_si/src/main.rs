@@ -1,4 +1,8 @@
+mod config;
+
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use anyhow::Result;
+use config::AppConfig;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
@@ -11,7 +15,7 @@ async fn health() -> impl Responder {
 }
 
 #[actix_web::main]
-async fn main() -> std::io::Result<()> {
+async fn main() -> Result<()> {
     tracing_subscriber::fmt()
         .with_env_filter(
             EnvFilter::try_from_default_env()
@@ -19,13 +23,23 @@ async fn main() -> std::io::Result<()> {
         )
         .init();
 
-    info!("starting telco_si");
+    let config = AppConfig::from_env()?;
+
+    info!(
+        host = %config.host,
+        port = config.port,
+        "starting telco_si"
+    );
+
+    let bind_address = format!("{}:{}", config.host, config.port);
 
     HttpServer::new(|| {
         App::new()
             .route("/health", web::get().to(health))
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind(&bind_address)?
     .run()
-    .await
+    .await?;
+
+    Ok(())
 }
