@@ -20,7 +20,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.0.3] - 2026-09-19
+### Added
+
+- `src/domain/` — Domain layer bootstrap (Phase 2, Subscriber context, part 1):
+  - `src/domain/mod.rs` — domain root module re-exporting the subscriber context.
+  - `src/domain/subscriber/mod.rs` — module wiring and public re-exports
+    (`Subscriber`, `SubscriberError`, `AccountNumber`, `Money`, `SubscriberId`,
+    `SubscriberStatus`).
+  - `src/domain/subscriber/error.rs` — `SubscriberError` (`thiserror`) with
+    variants covering the state machine: `AlreadySuspended`, `AlreadyActive`,
+    `Terminated`, `InvalidTermination`, `NegativeBalance`, `InvalidAccountNumber`.
+  - `src/domain/subscriber/value_objects.rs` — `SubscriberStatus` enum,
+    `SubscriberId` (UUID v4), `AccountNumber` (non-empty validation),
+    `Money` with `zero()` / `from_cents()` (returns `Result` and rejects negative
+    amounts via `NegativeBalance`) / `cents()` / `add()`.
+  - `src/domain/subscriber/entity.rs` — `Subscriber` aggregate: `new()`
+    (starts Active, zero balance), `suspend()` / `activate()` / `terminate()`
+    transitions enforcing the state machine, and getters.
+- Unit tests for the Subscriber state machine and value-object invariants
+  (15 tests: entity transitions + account-number/money validation).
+
+
 
 ### Added
 

@@ -1,5 +1,6 @@
 mod config;
 mod database;
+mod domain;
 
 use actix_web::{App, HttpResponse, HttpServer, Responder, web};
 use anyhow::Result;
