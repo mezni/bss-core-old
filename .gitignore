@@ -1,5 +1,6 @@
+
 # Rust
-telco_si/target/
+**/target/
 
 # IDEs
 .idea/
@@ -11,6 +12,9 @@ Thumbs.db
 Desktop.ini
 
 # Environment / secrets
+**/.env
+**/.env.*
+!**/.env.example
 .env
 .env.*
 !.env.example
@@ -19,6 +23,10 @@ Desktop.ini
 *.db
 *.sqlite
 *.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+*.db-wal
+*.db-shm
 
 # Logs
 *.log
@@ -27,7 +35,11 @@ logs/
 # Temporary files
 tmp/
 temp/
+**/tmp/
+**/temp/
 
-# Coverage
+# Coverage & HTML reports
 coverage/
 tarpaulin-report.html
+**/coverage/
+**/*.html
