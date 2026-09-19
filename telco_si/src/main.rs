@@ -1,8 +1,10 @@
 mod config;
+mod database;
 
-use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{App, HttpResponse, HttpServer, Responder, web};
 use anyhow::Result;
 use config::AppConfig;
+use database::create_pool;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
@@ -18,8 +20,7 @@ async fn health() -> impl Responder {
 async fn main() -> Result<()> {
     tracing_subscriber::fmt()
         .with_env_filter(
-            EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| EnvFilter::new("telco_si=info")),
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("telco_si=info")),
         )
         .init();
 
@@ -28,13 +29,21 @@ async fn main() -> Result<()> {
     info!(
         host = %config.host,
         port = config.port,
+        database_url = %config.database_url,
         "starting telco_si"
     );
 
+    let pool = create_pool(&config.database_url).await?;
+
+    let database_check: (i64,) = sqlx::query_as("SELECT 1").fetch_one(&pool).await?;
+
+    info!(result = database_check.0, "database connection verified");
+
     let bind_address = format!("{}:{}", config.host, config.port);
 
-    HttpServer::new(|| {
+    HttpServer::new(move || {
         App::new()
+            .app_data(web::Data::new(pool.clone()))
             .route("/health", web::get().to(health))
     })
     .bind(&bind_address)?

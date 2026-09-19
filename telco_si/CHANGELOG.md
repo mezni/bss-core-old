@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Feature Domain | Key Objectives |
 |---------|----------------|----------------|
+| 0.0.3   | Foundation | Database pool creation, WAL + foreign keys, health endpoint with DB verification |
 | 0.0.2   | Foundation | Dependencies, Actix Web server, health endpoint |
 | 0.0.1   | Foundation | Project scaffold, DDD structure, dependencies, config, entry point |
 
@@ -18,6 +19,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Key Objectives: main deliverables scoped to that version.
 
 ## [Unreleased]
+
+## [0.0.3] - 2026-09-19
+
+### Added
+
+- `src/database.rs` — SQLite connection pool via SQLx 0.9 `SqliteConnectOptions`:
+  - `create_if_missing(true)` — fixes sqlx 0.9's default (error code 14, `unable to open database file`) which no longer auto-creates the DB file.
+  - WAL journal mode and foreign keys enabled at the options level.
+- `src/config.rs` — `AppConfig` reading `APP_HOST`, `APP_PORT`, `DATABASE_URL` from env (returning `anyhow::Result`).
+- `src/main.rs`:
+  - Initializes `tracing_subscriber` with env-filter (fallback `telco_si=info`).
+  - Loads config, creates the DB pool, verifies connectivity with `SELECT 1` before binding.
+  - Health endpoint returns `{"status": "ok"}`.
+- `.gitignore` for `/target` and local `*.db` files.
+
+### Fixed
+
+- Server startup failed with `unable to open database file` (SQLite code 14) because sqlx 0.9 defaults `create_if_missing` to `false`; the pool is now built with explicit connect options.
 
 ## [0.0.2] - 2026-09-19
 
