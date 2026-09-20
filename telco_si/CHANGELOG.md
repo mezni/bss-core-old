@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 | 0.0.3   | Foundation | Database pool creation, WAL + foreign keys, health endpoint with DB verification |
 | 0.0.2   | Foundation | Dependencies, Actix Web server, health endpoint |
 | 0.0.1   | Foundation | Project scaffold, DDD structure, dependencies, config, entry point |
+| 0.0.4   | Subscriber  | Repository port + SQLite persistence, subscribers table migration, domain reconstitution |
 
 ### Legend
 
@@ -37,10 +38,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `src/domain/subscriber/entity.rs` — `Subscriber` aggregate: `new()`
     (starts Active, zero balance), `suspend()` / `activate()` / `terminate()`
     transitions enforcing the state machine, and getters.
+  - `src/domain/subscriber/entity.rs` — `Subscriber::reconstitute()` builds an
+    aggregate from persisted values (bypasses `new()` invariants for reads).
+  - `src/domain/subscriber/value_objects.rs` — `SubscriberId::from_uuid()` for
+    reconstructing IDs from the database.
 - Unit tests for the Subscriber state machine and value-object invariants
   (15 tests: entity transitions + account-number/money validation).
 
+### Added
 
+- `src/application/` — Application layer bootstrap (Phase 2, Subscriber context, part 2):
+  - `src/application/mod.rs` and `src/application/subscriber/mod.rs` — module wiring.
+  - `src/application/subscriber/repository.rs` — `SubscriberRepository` port
+    (`async_trait`, `Send + Sync`): `create()`, `find_by_id()`,
+    `find_by_account_number()`, `update()`.
+  - `src/application/subscriber/service.rs` — `SubscriberService<R>` use-case
+    layer over `SubscriberRepository`:
+    - `new()` constructor taking the repository.
+    - `create()` — validates `AccountNumber`, rejects duplicate account numbers,
+      and persists a new Active subscriber.
+    - `get()` — retrieves a subscriber by `Uuid`.
+    - `suspend()` / `activate()` / `terminate()` — load, apply the state
+      transition (mapping domain errors to `anyhow`), and persist via `update()`.
+  - `src/application/subscriber/mod.rs` — re-exports `SubscriberRepository` and
+    `SubscriberService`.
+- `src/infrastructure/` — Infrastructure layer bootstrap:
+  - `src/infrastructure/mod.rs` and `src/infrastructure/persistence/mod.rs` — module wiring.
+  - `src/infrastructure/persistence/subscriber_repository.rs` —
+    `SqliteSubscriberRepository` implementing the `SubscriberRepository` port on
+    SQLx: `SubscriberRow` (`FromRow`) mapped to/from the domain aggregate via
+    `into_domain()` and `reconstitute()`, with status string mapping
+    (`active` / `suspended` / `terminated`) and field validation on reads.
+- `migrations/20260920183725_create_subscribers.sql` — `subscribers` table
+  (UUID id, unique account_number, status with CHECK constraint,
+  non-negative balance_cents, nullable plan_id, timestamps) plus an index on
+  `status`.
+- `src/main.rs` — runs `sqlx::migrate!` on startup before the pool
+  verification.
+- `src/database.rs` — pool built with `SqlitePoolOptions::max_connections(10)`.
+- Dependency: `async-trait`.
 
 ### Added
 
