@@ -1,6 +1,6 @@
 # Session Handoff
 
-_Last updated: 2026-09-19_
+_Last updated: 2026-09-20_
 
 ## Project
 
@@ -22,30 +22,53 @@ code themselves in a step-by-step fashion. The assistant:
 - **Runtime/API (0.0.x)** — implemented and working:
   - Actix Web server + `GET /health` returning `{"status": "ok"}`.
   - Config loader (`AppConfig` from `APP_HOST` / `APP_PORT` / `DATABASE_URL`).
-  - SQLx 0.9 + SQLite pool with `create_if_missing(true)`, WAL, foreign keys;
-    `SELECT 1` verification before binding. Deps: actix-web, tokio, sqlx, anyhow,
+  - SQLx 0.9 + SQLite pool with `create_if_missing(true)`, WAL, foreign keys,
+    `max_connections(10)`; `SELECT 1` verification before binding; migrations
+    run on startup. Deps: actix-web, tokio, sqlx, anyhow, async-trait,
     thiserror, tracing, tracing-subscriber, uuid, chrono, serde.
-  - `src/database.rs`, `src/config.rs`, `src/main.rs`.
-- **Domain layer — Subscriber context (part 1)** — implemented and tested:
-  - `src/domain/mod.rs` → `pub mod subscriber;`
-  - `src/domain/subscriber/mod.rs` — module wiring + public re-exports.
+- **Domain layer — Subscriber context** — implemented and tested:
   - `src/domain/subscriber/error.rs` — `SubscriberError` (thiserror):
     `AlreadySuspended`, `AlreadyActive`, `Terminated`, `InvalidTermination`,
     `NegativeBalance`, `InvalidAccountNumber`.
   - `src/domain/subscriber/value_objects.rs` — `SubscriberStatus`,
-    `SubscriberId` (UUID v4), `AccountNumber` (non-empty validation),
-    `Money` with `zero()` / `from_cents()` — returns `Result` and rejects
-    negative via `NegativeBalance` — / `cents()` / `add()`.
+    `SubscriberId` (UUID v4, `new()` / `from_uuid()`), `AccountNumber`
+    (non-empty validation), `Money` (`zero()` / `from_cents()` rejects
+    negative via `NegativeBalance` / `cents()` / `add()`).
   - `src/domain/subscriber/entity.rs` — `Subscriber` aggregate: `new()`
     (starts Active, zero balance), `suspend()` / `activate()` / `terminate()`
-    state transitions enforcing the lifecycle, getters.
-  - `mod domain;` wired into `src/main.rs`.
-- **Tests** — `cargo test` → 15 passing (subscriber entity state machine +
-  value-object invariants).
+    state transitions, `reconstitute()` for DB reads, getters.
+- **Application layer — Subscriber context**:
+  - `src/application/error.rs` — `ApplicationError` (`SubscriberNotFound`,
+    `AccountNumberAlreadyExists`, `InvalidRequest`, `InvalidSubscriberState`,
+    `Infrastructure`) + `ApplicationResult<T>`.
+  - `src/application/subscriber/repository.rs` — `SubscriberRepository` port
+    (`create`, `find_by_id`, `find_by_account_number`, `update`).
+  - `src/application/subscriber/service.rs` — `SubscriberService<R>` use cases:
+    `create` (validates account number, rejects duplicates), `get`,
+    `suspend` / `activate` / `terminate` (load → transition → persist).
+- **Infrastructure layer**:
+  - `src/infrastructure/persistence/subscriber_repository.rs` —
+    `SqliteSubscriberRepository` (SQLx) implementing the port; `#[derive(Clone)]`.
+  - `migrations/` — `initial_schema.sql` + `create_subscribers.sql`
+    (`subscribers` table with status/balance CHECKs, unique account_number,
+    index on status).
+- **Interfaces layer (HTTP)**:
+  - `src/interfaces/http/dto.rs` — `CreateSubscriberRequest`, `SubscriberResponse`.
+  - `src/interfaces/http/subscriber.rs` — handlers + `configure()`:
+    `POST /subscribers`, `GET /subscribers/{id}`,
+    `POST /subscribers/{id}/suspend|activate|terminate`.
+  - `src/interfaces/http/error.rs` — `ResponseError for ApplicationError`
+    (404 / 409 / 400 / 409 / 500 generic).
+- **Library crate + tests**:
+  - `src/lib.rs` exposes all modules so integration tests can import `telco_si`.
+  - `tests/subscriber_integration.rs` — 4 tests on in-memory SQLite
+    (`max_connections(1)` + migrations): create/get round trip, duplicate
+    account rejected, persisted lifecycle, `POST /subscribers` through HTTP → 201.
+- **Tests** — `cargo test`: domain unit tests (15) + integration tests (4).
 - **Git** — repo root is the monorepo `/home/dali/WORK/utils`; `telco_si/target/`
   and local `*.db` are git-ignored. `CHANGELOG.md` follows Keep a Changelog.
-  Working tree has the domain layer + `mod domain;` as new/unstaged work (not yet
-  committed/pushed).
+  Code commits are pushed up to `Add subscribers tests` (f3522c6); the only
+  pending change is the updated `CHANGELOG.md`.
 
 ## Decisions so far
 
@@ -55,11 +78,15 @@ code themselves in a step-by-step fashion. The assistant:
   Billing, Payment, Dunning, Document.
 - `Money` invariant: balance can never be negative — `from_cents(<0)` is a
   hard error (`NegativeBalance`).
+- Application errors are typed (`ApplicationError`) and mapped to HTTP status
+  codes once, centrally, via `ResponseError`.
+- Library crate (`src/lib.rs`) alongside the binary so integration tests can
+  import application modules.
 
 ## Next steps (when user provides them)
 
-1. Phase 2 — Subscriber context continues: persistence/adapter for the
-   Subscriber aggregate (migrations, SQLx repository), then application services.
+1. Phase 2 — Subscriber context continues: more use cases/handlers as directed
+   (e.g. balance operations), then remaining bounded contexts.
 2. Phase 3 — Inventory (MSISDN, SIM/IMSI).
 3. Phase 4 — Device (IMEI).
 4. Phase 5 — Usage / CDR.
@@ -77,3 +104,5 @@ code themselves in a step-by-step fashion. The assistant:
 - Update `CHANGELOG.md` versions and this handoff as phases complete.
 - Push confidently: no oversized blobs remain; the next push is a normal
   fast-forward from `origin/main`.
+- `cargo build`/`cargo test` may stall on first run (network fetch); use
+  `--offline` if dependencies are already cached.

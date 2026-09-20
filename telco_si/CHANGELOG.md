@@ -119,6 +119,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `src/lib.rs` — exposes the application as a library crate
+  (`application`, `config`, `database`, `domain`, `infrastructure`,
+  `interfaces`) so integration tests can import the modules.
+- `src/main.rs` — drops local `mod` declarations and imports from the
+  `telco_si` library crate.
+- `tests/subscriber_integration.rs` — integration tests on an in-memory
+  SQLite database (`sqlite::memory:` with `max_connections(1)` so a single
+  connection backs the test DB, plus migrations on setup):
+  - `create_and_get_subscriber` — full service → repository → SQLite round trip.
+  - `duplicate_account_number_is_rejected` — duplicates surface as
+    `ApplicationError::AccountNumberAlreadyExists`.
+  - `subscriber_lifecycle_is_persisted` — suspend → activate → terminate
+    transitions are persisted and reloadable.
+  - `create_subscriber_through_http` — `POST /subscribers` via the Actix test
+    harness returns 201.
+
+### Added
+
 - `src/database.rs` — SQLite connection pool via SQLx 0.9 `SqliteConnectOptions`:
   - `create_if_missing(true)` — fixes sqlx 0.9's default (error code 14, `unable to open database file`) which no longer auto-creates the DB file.
   - WAL journal mode and foreign keys enabled at the options level.
