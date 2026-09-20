@@ -59,6 +59,7 @@ impl SubscriberRow {
     }
 }
 
+#[derive(Clone)]
 pub struct SqliteSubscriberRepository {
     pool: SqlitePool,
 }

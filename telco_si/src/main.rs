@@ -3,11 +3,15 @@ mod config;
 mod database;
 mod domain;
 mod infrastructure;
+mod interfaces;
 
 use actix_web::{App, HttpResponse, HttpServer, Responder, web};
 use anyhow::Result;
+use application::subscriber::SubscriberService;
 use config::AppConfig;
 use database::create_pool;
+use infrastructure::persistence::subscriber_repository::SqliteSubscriberRepository;
+use interfaces::http::subscriber;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
@@ -46,12 +50,21 @@ async fn main() -> Result<()> {
 
     info!(result = database_check.0, "database connection verified");
 
+    let subscriber_repository =
+        SqliteSubscriberRepository::new(pool.clone());
+
+    let subscriber_service =
+        SubscriberService::new(subscriber_repository);
+
     let bind_address = format!("{}:{}", config.host, config.port);
 
     HttpServer::new(move || {
         App::new()
-            .app_data(web::Data::new(pool.clone()))
+            .app_data(web::Data::new(
+                subscriber_service.clone(),
+            ))
             .route("/health", web::get().to(health))
+            .configure(subscriber::configure)
     })
     .bind(&bind_address)?
     .run()

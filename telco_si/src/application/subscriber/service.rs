@@ -10,6 +10,7 @@ use crate::{
     },
 };
 
+#[derive(Clone)]
 pub struct SubscriberService<R>
 where
     R: SubscriberRepository,
