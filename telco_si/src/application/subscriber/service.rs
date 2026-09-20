@@ -39,7 +39,11 @@ where
     ) -> ApplicationResult<Subscriber> {
         let account_number =
             AccountNumber::new(account_number)
-                .map_err(ApplicationError::InvalidRequest)?;
+                .map_err(|error| {
+                    ApplicationError::InvalidRequest(
+                        error.to_string(),
+                    )
+                })?;
 
         if self
             .repository

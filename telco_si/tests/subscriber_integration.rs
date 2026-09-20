@@ -1,0 +1,173 @@
+use actix_web::{test, web, App};
+use sqlx::{
+    sqlite::SqlitePoolOptions,
+    SqlitePool,
+};
+
+use telco_si::{
+    application::subscriber::SubscriberService,
+    infrastructure::persistence::subscriber_repository::SqliteSubscriberRepository,
+    interfaces::http::subscriber,
+};
+
+async fn create_test_pool() -> SqlitePool {
+    let pool = SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect("sqlite::memory:")
+        .await
+        .expect("failed to create test database");
+
+    sqlx::migrate!("./migrations")
+        .run(&pool)
+        .await
+        .expect("failed to run migrations");
+
+    pool
+}
+
+#[tokio::test]
+async fn create_and_get_subscriber() {
+    let pool = create_test_pool().await;
+
+    let repository = SqliteSubscriberRepository::new(pool);
+    let service = SubscriberService::new(repository);
+
+    let subscriber = service
+        .create("ACC-10001".to_string())
+        .await
+        .expect("subscriber creation failed");
+
+    assert_eq!(
+        subscriber.account_number().value(),
+        "ACC-10001"
+    );
+
+    assert_eq!(
+        subscriber.status(),
+        telco_si::domain::subscriber::SubscriberStatus::Active
+    );
+
+    let subscriber_id = subscriber.id().value();
+
+    let loaded = service
+        .get(subscriber_id)
+        .await
+        .expect("subscriber lookup failed")
+        .expect("subscriber should exist");
+
+    assert_eq!(
+        loaded.id().value(),
+        subscriber_id
+    );
+
+    assert_eq!(
+        loaded.account_number().value(),
+        "ACC-10001"
+    );
+}
+
+#[tokio::test]
+async fn duplicate_account_number_is_rejected() {
+    let pool = create_test_pool().await;
+
+    let repository = SqliteSubscriberRepository::new(pool);
+    let service = SubscriberService::new(repository);
+
+    service
+        .create("ACC-20001".to_string())
+        .await
+        .expect("first subscriber should be created");
+
+    let result = service
+        .create("ACC-20001".to_string())
+        .await;
+
+    assert!(matches!(
+        result,
+        Err(
+            telco_si::application::error::ApplicationError::AccountNumberAlreadyExists
+        )
+    ));
+}
+
+#[tokio::test]
+async fn subscriber_lifecycle_is_persisted() {
+    let pool = create_test_pool().await;
+
+    let repository = SqliteSubscriberRepository::new(pool);
+    let service = SubscriberService::new(repository);
+
+    let subscriber = service
+        .create("ACC-30001".to_string())
+        .await
+        .expect("subscriber creation failed");
+
+    let id = subscriber.id().value();
+
+    let subscriber = service
+        .suspend(id)
+        .await
+        .expect("suspend failed");
+
+    assert_eq!(
+        subscriber.status(),
+        telco_si::domain::subscriber::SubscriberStatus::Suspended
+    );
+
+    let subscriber = service
+        .activate(id)
+        .await
+        .expect("activate failed");
+
+    assert_eq!(
+        subscriber.status(),
+        telco_si::domain::subscriber::SubscriberStatus::Active
+    );
+
+    let subscriber = service
+        .terminate(id)
+        .await
+        .expect("terminate failed");
+
+    assert_eq!(
+        subscriber.status(),
+        telco_si::domain::subscriber::SubscriberStatus::Terminated
+    );
+
+    let loaded = service
+        .get(id)
+        .await
+        .expect("lookup failed")
+        .expect("subscriber should exist");
+
+    assert_eq!(
+        loaded.status(),
+        telco_si::domain::subscriber::SubscriberStatus::Terminated
+    );
+}
+
+#[actix_web::test]
+async fn create_subscriber_through_http() {
+    let pool = create_test_pool().await;
+
+    let repository = SqliteSubscriberRepository::new(pool);
+    let service = SubscriberService::new(repository);
+
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(service))
+            .configure(subscriber::configure),
+    )
+    .await;
+
+    let request = test::TestRequest::post()
+        .uri("/subscribers")
+        .set_json(serde_json::json!({
+            "account_number": "ACC-40001"
+        }))
+        .to_request();
+
+    let response = test::call_service(&app, request).await;
+
+    assert_eq!(response.status(), 201);
+}

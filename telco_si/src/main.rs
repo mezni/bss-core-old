@@ -1,17 +1,10 @@
-mod application;
-mod config;
-mod database;
-mod domain;
-mod infrastructure;
-mod interfaces;
-
 use actix_web::{App, HttpResponse, HttpServer, Responder, web};
 use anyhow::Result;
-use application::subscriber::SubscriberService;
-use config::AppConfig;
-use database::create_pool;
-use infrastructure::persistence::subscriber_repository::SqliteSubscriberRepository;
-use interfaces::http::subscriber;
+use telco_si::application::subscriber::SubscriberService;
+use telco_si::config::AppConfig;
+use telco_si::database::create_pool;
+use telco_si::infrastructure::persistence::subscriber_repository::SqliteSubscriberRepository;
+use telco_si::interfaces::http::subscriber;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
