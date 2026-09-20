@@ -99,6 +99,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `src/application/error.rs` — `ApplicationError` enum (`thiserror`) with typed
+  variants: `SubscriberNotFound`, `AccountNumberAlreadyExists`,
+  `InvalidRequest`, `InvalidSubscriberState`, `Infrastructure` (+ `ApplicationResult<T>` alias).
+- `src/application/subscriber/service.rs` — use-case methods now return
+  `ApplicationResult` instead of `anyhow::Result`, mapping validation /
+  duplicates / missing rows / state-machine / repository failures to the
+  respective `ApplicationError` variants.
+- `src/interfaces/http/error.rs` — centralized `ResponseError` for
+  `ApplicationError`:
+  - 404 for `SubscriberNotFound`.
+  - 409 for `AccountNumberAlreadyExists` and `InvalidSubscriberState`.
+  - 400 for `InvalidRequest`.
+  - 500 with a generic `"internal server error"` body (error logged) for
+    `Infrastructure`.
+- `src/interfaces/http/subscriber.rs` — handlers simplified to
+  `Result<HttpResponse, ApplicationError>` using `?`; `get_subscriber`
+  returns 404 via `SubscriberNotFound` when no row exists.
+
+### Added
+
 - `src/database.rs` — SQLite connection pool via SQLx 0.9 `SqliteConnectOptions`:
   - `create_if_missing(true)` — fixes sqlx 0.9's default (error code 14, `unable to open database file`) which no longer auto-creates the DB file.
   - WAL journal mode and foreign keys enabled at the options level.
