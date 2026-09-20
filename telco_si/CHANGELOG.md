@@ -80,6 +80,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `src/interfaces/` — HTTP interface layer (Phase 2, Subscriber context, part 3):
+  - `src/interfaces/mod.rs` and `src/interfaces/http/mod.rs` — module wiring.
+  - `src/interfaces/http/dto.rs` — `CreateSubscriberRequest` (Deserialize) and
+    `SubscriberResponse` (Serialize) with `From<Subscriber>` conversion.
+  - `src/interfaces/http/subscriber.rs` — Actix Web handlers on the
+    `/subscribers` scope:
+    - `POST /subscribers` — create (201 on success, 400 on error).
+    - `GET /subscribers/{id}` — get (200, 404 if not found, 500 on error).
+    - `POST /subscribers/{id}/suspend` | `/activate` | `/terminate` — state
+      transitions (200 on success, 400 on error).
+    - `configure()` registering the scoped routes.
+- `src/main.rs` — wires `SqliteSubscriberRepository` → `SubscriberService`,
+  injects the service via `web::Data` (cloned per worker), and configures the
+  subscriber routes alongside `/health`.
+- `SubscriberService` now derives `Clone` (and `SqliteSubscriberRepository`
+  derives `Clone` via `SqlitePool`) so it can be shared across Actix workers.
+
+### Added
+
 - `src/database.rs` — SQLite connection pool via SQLx 0.9 `SqliteConnectOptions`:
   - `create_if_missing(true)` — fixes sqlx 0.9's default (error code 14, `unable to open database file`) which no longer auto-creates the DB file.
   - WAL journal mode and foreign keys enabled at the options level.

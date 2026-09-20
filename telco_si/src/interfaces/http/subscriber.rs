@@ -1,12 +1,15 @@
 use actix_web::{
-    web,
     HttpResponse,
-    Responder,
+    Result,
+    web,
 };
 use uuid::Uuid;
 
 use crate::{
-    application::subscriber::SubscriberService,
+    application::{
+        error::ApplicationError,
+        subscriber::SubscriberService,
+    },
     infrastructure::persistence::subscriber_repository::SqliteSubscriberRepository,
 };
 
@@ -21,115 +24,66 @@ type SubscriberAppService =
 pub async fn create_subscriber(
     service: web::Data<SubscriberAppService>,
     request: web::Json<CreateSubscriberRequest>,
-) -> impl Responder {
-    match service
+) -> Result<HttpResponse, ApplicationError> {
+    let subscriber = service
         .create(request.account_number.clone())
-        .await
-    {
-        Ok(subscriber) => {
-            HttpResponse::Created()
-                .json(SubscriberResponse::from(subscriber))
-        }
+        .await?;
 
-        Err(error) => {
-            HttpResponse::BadRequest()
-                .json(serde_json::json!({
-                    "error": error.to_string()
-                }))
-        }
-    }
+    Ok(HttpResponse::Created()
+        .json(SubscriberResponse::from(subscriber)))
 }
 
 pub async fn get_subscriber(
     service: web::Data<SubscriberAppService>,
     subscriber_id: web::Path<Uuid>,
-) -> impl Responder {
-    match service.get(subscriber_id.into_inner()).await {
-        Ok(Some(subscriber)) => {
-            HttpResponse::Ok()
-                .json(SubscriberResponse::from(subscriber))
+) -> Result<HttpResponse, ApplicationError> {
+    match service
+        .get(subscriber_id.into_inner())
+        .await?
+    {
+        Some(subscriber) => {
+            Ok(HttpResponse::Ok()
+                .json(SubscriberResponse::from(subscriber)))
         }
 
-        Ok(None) => {
-            HttpResponse::NotFound()
-                .json(serde_json::json!({
-                    "error": "subscriber not found"
-                }))
-        }
-
-        Err(error) => {
-            HttpResponse::InternalServerError()
-                .json(serde_json::json!({
-                    "error": error.to_string()
-                }))
-        }
+        None => Err(ApplicationError::SubscriberNotFound),
     }
 }
 
 pub async fn suspend_subscriber(
     service: web::Data<SubscriberAppService>,
     subscriber_id: web::Path<Uuid>,
-) -> impl Responder {
-    match service
+) -> Result<HttpResponse, ApplicationError> {
+    let subscriber = service
         .suspend(subscriber_id.into_inner())
-        .await
-    {
-        Ok(subscriber) => {
-            HttpResponse::Ok()
-                .json(SubscriberResponse::from(subscriber))
-        }
+        .await?;
 
-        Err(error) => {
-            HttpResponse::BadRequest()
-                .json(serde_json::json!({
-                    "error": error.to_string()
-                }))
-        }
-    }
+    Ok(HttpResponse::Ok()
+        .json(SubscriberResponse::from(subscriber)))
 }
 
 pub async fn activate_subscriber(
     service: web::Data<SubscriberAppService>,
     subscriber_id: web::Path<Uuid>,
-) -> impl Responder {
-    match service
+) -> Result<HttpResponse, ApplicationError> {
+    let subscriber = service
         .activate(subscriber_id.into_inner())
-        .await
-    {
-        Ok(subscriber) => {
-            HttpResponse::Ok()
-                .json(SubscriberResponse::from(subscriber))
-        }
+        .await?;
 
-        Err(error) => {
-            HttpResponse::BadRequest()
-                .json(serde_json::json!({
-                    "error": error.to_string()
-                }))
-        }
-    }
+    Ok(HttpResponse::Ok()
+        .json(SubscriberResponse::from(subscriber)))
 }
 
 pub async fn terminate_subscriber(
     service: web::Data<SubscriberAppService>,
     subscriber_id: web::Path<Uuid>,
-) -> impl Responder {
-    match service
+) -> Result<HttpResponse, ApplicationError> {
+    let subscriber = service
         .terminate(subscriber_id.into_inner())
-        .await
-    {
-        Ok(subscriber) => {
-            HttpResponse::Ok()
-                .json(SubscriberResponse::from(subscriber))
-        }
+        .await?;
 
-        Err(error) => {
-            HttpResponse::BadRequest()
-                .json(serde_json::json!({
-                    "error": error.to_string()
-                }))
-        }
-    }
+    Ok(HttpResponse::Ok()
+        .json(SubscriberResponse::from(subscriber)))
 }
 
 pub fn configure(cfg: &mut web::ServiceConfig) {

@@ -1,8 +1,10 @@
-use anyhow::{anyhow, Context, Result};
 use uuid::Uuid;
 
 use crate::{
-    application::subscriber::repository::SubscriberRepository,
+    application::{
+        error::{ApplicationError, ApplicationResult},
+        subscriber::repository::SubscriberRepository,
+    },
     domain::subscriber::{
         AccountNumber,
         Subscriber,
@@ -34,20 +36,21 @@ where
     pub async fn create(
         &self,
         account_number: String,
-    ) -> Result<Subscriber> {
+    ) -> ApplicationResult<Subscriber> {
         let account_number =
             AccountNumber::new(account_number)
-                .map_err(anyhow::Error::msg)?;
+                .map_err(ApplicationError::InvalidRequest)?;
 
         if self
             .repository
             .find_by_account_number(account_number.value())
-            .await?
+            .await
+            .map_err(ApplicationError::Infrastructure)?
             .is_some()
         {
-            return Err(anyhow!(
-                "subscriber account number already exists"
-            ));
+            return Err(
+                ApplicationError::AccountNumberAlreadyExists
+            );
         }
 
         let subscriber = Subscriber::new(account_number);
@@ -55,7 +58,7 @@ where
         self.repository
             .create(&subscriber)
             .await
-            .context("failed to persist new subscriber")?;
+            .map_err(ApplicationError::Infrastructure)?;
 
         Ok(subscriber)
     }
@@ -63,35 +66,40 @@ where
     pub async fn get(
         &self,
         id: Uuid,
-    ) -> Result<Option<Subscriber>> {
+    ) -> ApplicationResult<Option<Subscriber>> {
         let subscriber_id = SubscriberId::from_uuid(id);
 
         self.repository
             .find_by_id(subscriber_id)
             .await
-            .context("failed to retrieve subscriber")
+            .map_err(ApplicationError::Infrastructure)
     }
 
     pub async fn suspend(
         &self,
         id: Uuid,
-    ) -> Result<Subscriber> {
+    ) -> ApplicationResult<Subscriber> {
         let subscriber_id = SubscriberId::from_uuid(id);
 
         let mut subscriber = self
             .repository
             .find_by_id(subscriber_id)
-            .await?
-            .ok_or_else(|| anyhow!("subscriber not found"))?;
+            .await
+            .map_err(ApplicationError::Infrastructure)?
+            .ok_or(ApplicationError::SubscriberNotFound)?;
 
         subscriber
             .suspend()
-            .map_err(anyhow::Error::msg)?;
+            .map_err(|error| {
+                ApplicationError::InvalidSubscriberState(
+                    error.to_string(),
+                )
+            })?;
 
         self.repository
             .update(&subscriber)
             .await
-            .context("failed to persist suspended subscriber")?;
+            .map_err(ApplicationError::Infrastructure)?;
 
         Ok(subscriber)
     }
@@ -99,23 +107,28 @@ where
     pub async fn activate(
         &self,
         id: Uuid,
-    ) -> Result<Subscriber> {
+    ) -> ApplicationResult<Subscriber> {
         let subscriber_id = SubscriberId::from_uuid(id);
 
         let mut subscriber = self
             .repository
             .find_by_id(subscriber_id)
-            .await?
-            .ok_or_else(|| anyhow!("subscriber not found"))?;
+            .await
+            .map_err(ApplicationError::Infrastructure)?
+            .ok_or(ApplicationError::SubscriberNotFound)?;
 
         subscriber
             .activate()
-            .map_err(anyhow::Error::msg)?;
+            .map_err(|error| {
+                ApplicationError::InvalidSubscriberState(
+                    error.to_string(),
+                )
+            })?;
 
         self.repository
             .update(&subscriber)
             .await
-            .context("failed to persist activated subscriber")?;
+            .map_err(ApplicationError::Infrastructure)?;
 
         Ok(subscriber)
     }
@@ -123,23 +136,28 @@ where
     pub async fn terminate(
         &self,
         id: Uuid,
-    ) -> Result<Subscriber> {
+    ) -> ApplicationResult<Subscriber> {
         let subscriber_id = SubscriberId::from_uuid(id);
 
         let mut subscriber = self
             .repository
             .find_by_id(subscriber_id)
-            .await?
-            .ok_or_else(|| anyhow!("subscriber not found"))?;
+            .await
+            .map_err(ApplicationError::Infrastructure)?
+            .ok_or(ApplicationError::SubscriberNotFound)?;
 
         subscriber
             .terminate()
-            .map_err(anyhow::Error::msg)?;
+            .map_err(|error| {
+                ApplicationError::InvalidSubscriberState(
+                    error.to_string(),
+                )
+            })?;
 
         self.repository
             .update(&subscriber)
             .await
-            .context("failed to persist terminated subscriber")?;
+            .map_err(ApplicationError::Infrastructure)?;
 
         Ok(subscriber)
     }
