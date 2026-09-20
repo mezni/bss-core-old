@@ -1,6 +1,8 @@
+mod application;
 mod config;
 mod database;
 mod domain;
+mod infrastructure;
 
 use actix_web::{App, HttpResponse, HttpServer, Responder, web};
 use anyhow::Result;
@@ -35,6 +37,10 @@ async fn main() -> Result<()> {
     );
 
     let pool = create_pool(&config.database_url).await?;
+
+    sqlx::migrate!("./migrations")
+        .run(&pool)
+        .await?;
 
     let database_check: (i64,) = sqlx::query_as("SELECT 1").fetch_one(&pool).await?;
 

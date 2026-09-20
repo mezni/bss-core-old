@@ -21,6 +21,10 @@ impl SubscriberId {
     pub fn value(&self) -> Uuid {
         self.0
     }
+
+    pub fn from_uuid(value: Uuid) -> Self {
+        Self(value)
+    }
 }
 
 impl Default for SubscriberId {

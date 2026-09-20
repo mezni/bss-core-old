@@ -105,6 +105,26 @@ impl Subscriber {
         self.plan_id
     }
 
+    pub fn reconstitute(
+        id: SubscriberId,
+        account_number: AccountNumber,
+        status: SubscriberStatus,
+        balance: Money,
+        plan_id: Option<Uuid>,
+        created_at: DateTime<Utc>,
+        updated_at: DateTime<Utc>,
+    ) -> Self {
+        Self {
+            id,
+            account_number,
+            status,
+            balance,
+            plan_id,
+            created_at,
+            updated_at,
+        }
+    }
+
     pub fn created_at(&self) -> DateTime<Utc> {
         self.created_at
     }
