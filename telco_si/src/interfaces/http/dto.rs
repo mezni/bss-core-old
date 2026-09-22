@@ -1,10 +1,7 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::domain::subscriber::{
-    Subscriber,
-    SubscriberStatus,
-};
+use crate::domain::subscriber::{Subscriber, SubscriberStatus};
 
 #[derive(Debug, Deserialize)]
 pub struct CreateSubscriberRequest {

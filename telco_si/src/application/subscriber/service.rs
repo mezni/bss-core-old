@@ -5,11 +5,7 @@ use crate::{
         error::{ApplicationError, ApplicationResult},
         subscriber::repository::SubscriberRepository,
     },
-    domain::subscriber::{
-        AccountNumber,
-        Subscriber,
-        SubscriberId,
-    },
+    domain::subscriber::{AccountNumber, Subscriber, SubscriberId},
 };
 
 #[derive(Clone)]
@@ -33,17 +29,9 @@ impl<R> SubscriberService<R>
 where
     R: SubscriberRepository,
 {
-    pub async fn create(
-        &self,
-        account_number: String,
-    ) -> ApplicationResult<Subscriber> {
-        let account_number =
-            AccountNumber::new(account_number)
-                .map_err(|error| {
-                    ApplicationError::InvalidRequest(
-                        error.to_string(),
-                    )
-                })?;
+    pub async fn create(&self, account_number: String) -> ApplicationResult<Subscriber> {
+        let account_number = AccountNumber::new(account_number)
+            .map_err(|error| ApplicationError::InvalidRequest(error.to_string()))?;
 
         if self
             .repository
@@ -52,9 +40,7 @@ where
             .map_err(ApplicationError::Infrastructure)?
             .is_some()
         {
-            return Err(
-                ApplicationError::AccountNumberAlreadyExists
-            );
+            return Err(ApplicationError::AccountNumberAlreadyExists);
         }
 
         let subscriber = Subscriber::new(account_number);
@@ -67,10 +53,7 @@ where
         Ok(subscriber)
     }
 
-    pub async fn get(
-        &self,
-        id: Uuid,
-    ) -> ApplicationResult<Option<Subscriber>> {
+    pub async fn get(&self, id: Uuid) -> ApplicationResult<Option<Subscriber>> {
         let subscriber_id = SubscriberId::from_uuid(id);
 
         self.repository
@@ -79,10 +62,7 @@ where
             .map_err(ApplicationError::Infrastructure)
     }
 
-    pub async fn suspend(
-        &self,
-        id: Uuid,
-    ) -> ApplicationResult<Subscriber> {
+    pub async fn suspend(&self, id: Uuid) -> ApplicationResult<Subscriber> {
         let subscriber_id = SubscriberId::from_uuid(id);
 
         let mut subscriber = self
@@ -94,11 +74,7 @@ where
 
         subscriber
             .suspend()
-            .map_err(|error| {
-                ApplicationError::InvalidSubscriberState(
-                    error.to_string(),
-                )
-            })?;
+            .map_err(|error| ApplicationError::InvalidSubscriberState(error.to_string()))?;
 
         self.repository
             .update(&subscriber)
@@ -108,10 +84,7 @@ where
         Ok(subscriber)
     }
 
-    pub async fn activate(
-        &self,
-        id: Uuid,
-    ) -> ApplicationResult<Subscriber> {
+    pub async fn activate(&self, id: Uuid) -> ApplicationResult<Subscriber> {
         let subscriber_id = SubscriberId::from_uuid(id);
 
         let mut subscriber = self
@@ -123,11 +96,7 @@ where
 
         subscriber
             .activate()
-            .map_err(|error| {
-                ApplicationError::InvalidSubscriberState(
-                    error.to_string(),
-                )
-            })?;
+            .map_err(|error| ApplicationError::InvalidSubscriberState(error.to_string()))?;
 
         self.repository
             .update(&subscriber)
@@ -137,10 +106,7 @@ where
         Ok(subscriber)
     }
 
-    pub async fn terminate(
-        &self,
-        id: Uuid,
-    ) -> ApplicationResult<Subscriber> {
+    pub async fn terminate(&self, id: Uuid) -> ApplicationResult<Subscriber> {
         let subscriber_id = SubscriberId::from_uuid(id);
 
         let mut subscriber = self
@@ -152,11 +118,7 @@ where
 
         subscriber
             .terminate()
-            .map_err(|error| {
-                ApplicationError::InvalidSubscriberState(
-                    error.to_string(),
-                )
-            })?;
+            .map_err(|error| ApplicationError::InvalidSubscriberState(error.to_string()))?;
 
         self.repository
             .update(&subscriber)

@@ -41,13 +41,9 @@ impl Subscriber {
                 Ok(())
             }
 
-            SubscriberStatus::Suspended => {
-                Err(SubscriberError::AlreadySuspended)
-            }
+            SubscriberStatus::Suspended => Err(SubscriberError::AlreadySuspended),
 
-            SubscriberStatus::Terminated => {
-                Err(SubscriberError::Terminated)
-            }
+            SubscriberStatus::Terminated => Err(SubscriberError::Terminated),
         }
     }
 
@@ -60,13 +56,9 @@ impl Subscriber {
                 Ok(())
             }
 
-            SubscriberStatus::Active => {
-                Err(SubscriberError::AlreadyActive)
-            }
+            SubscriberStatus::Active => Err(SubscriberError::AlreadyActive),
 
-            SubscriberStatus::Terminated => {
-                Err(SubscriberError::Terminated)
-            }
+            SubscriberStatus::Terminated => Err(SubscriberError::Terminated),
         }
     }
 
@@ -79,9 +71,7 @@ impl Subscriber {
                 Ok(())
             }
 
-            SubscriberStatus::Terminated => {
-                Err(SubscriberError::InvalidTermination)
-            }
+            SubscriberStatus::Terminated => Err(SubscriberError::InvalidTermination),
         }
     }
 
@@ -139,8 +129,7 @@ mod tests {
     use super::*;
 
     fn create_subscriber() -> Subscriber {
-        let account_number =
-            AccountNumber::new("ACC-10001").expect("valid account number");
+        let account_number = AccountNumber::new("ACC-10001").expect("valid account number");
 
         Subscriber::new(account_number)
     }
@@ -178,10 +167,7 @@ mod tests {
 
         let result = subscriber.activate();
 
-        assert!(matches!(
-            result,
-            Err(SubscriberError::AlreadyActive)
-        ));
+        assert!(matches!(result, Err(SubscriberError::AlreadyActive)));
     }
 
     #[test]
@@ -192,10 +178,7 @@ mod tests {
 
         let result = subscriber.suspend();
 
-        assert!(matches!(
-            result,
-            Err(SubscriberError::AlreadySuspended)
-        ));
+        assert!(matches!(result, Err(SubscriberError::AlreadySuspended)));
     }
 
     #[test]
@@ -206,10 +189,7 @@ mod tests {
 
         let result = subscriber.activate();
 
-        assert!(matches!(
-            result,
-            Err(SubscriberError::Terminated)
-        ));
+        assert!(matches!(result, Err(SubscriberError::Terminated)));
     }
 
     #[test]
@@ -220,10 +200,7 @@ mod tests {
 
         let result = subscriber.suspend();
 
-        assert!(matches!(
-            result,
-            Err(SubscriberError::Terminated)
-        ));
+        assert!(matches!(result, Err(SubscriberError::Terminated)));
     }
 
     #[test]
@@ -253,9 +230,6 @@ mod tests {
 
         let result = subscriber.terminate();
 
-        assert!(matches!(
-            result,
-            Err(SubscriberError::InvalidTermination)
-        ));
+        assert!(matches!(result, Err(SubscriberError::InvalidTermination)));
     }
 }

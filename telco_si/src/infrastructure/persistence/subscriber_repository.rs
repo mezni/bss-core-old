@@ -5,13 +5,7 @@ use sqlx::SqlitePool;
 
 use crate::{
     application::subscriber::repository::SubscriberRepository,
-    domain::subscriber::{
-        AccountNumber,
-        Money,
-        Subscriber,
-        SubscriberId,
-        SubscriberStatus,
-    },
+    domain::subscriber::{AccountNumber, Money, Subscriber, SubscriberId, SubscriberStatus},
 };
 
 #[derive(Debug, sqlx::FromRow)]
@@ -27,19 +21,15 @@ struct SubscriberRow {
 
 impl SubscriberRow {
     fn into_domain(self) -> Result<Subscriber> {
-        let id = uuid::Uuid::parse_str(&self.id)
-            .context("invalid subscriber UUID in database")?;
+        let id = uuid::Uuid::parse_str(&self.id).context("invalid subscriber UUID in database")?;
 
         let subscriber_id = SubscriberId::from_uuid(id);
 
-        let account_number =
-            AccountNumber::new(self.account_number)
-                .map_err(anyhow::Error::msg)?;
+        let account_number = AccountNumber::new(self.account_number).map_err(anyhow::Error::msg)?;
 
         let status = string_to_status(&self.status)?;
 
-        let balance = Money::from_cents(self.balance_cents)
-            .map_err(anyhow::Error::msg)?;
+        let balance = Money::from_cents(self.balance_cents).map_err(anyhow::Error::msg)?;
 
         let plan_id = self
             .plan_id
@@ -101,10 +91,7 @@ impl SubscriberRepository for SqliteSubscriberRepository {
         Ok(())
     }
 
-    async fn find_by_id(
-        &self,
-        id: SubscriberId,
-    ) -> Result<Option<Subscriber>> {
+    async fn find_by_id(&self, id: SubscriberId) -> Result<Option<Subscriber>> {
         let row = sqlx::query_as::<_, SubscriberRow>(
             r#"
             SELECT
@@ -127,10 +114,7 @@ impl SubscriberRepository for SqliteSubscriberRepository {
         row.map(SubscriberRow::into_domain).transpose()
     }
 
-    async fn find_by_account_number(
-        &self,
-        account_number: &str,
-    ) -> Result<Option<Subscriber>> {
+    async fn find_by_account_number(&self, account_number: &str) -> Result<Option<Subscriber>> {
         let row = sqlx::query_as::<_, SubscriberRow>(
             r#"
             SELECT
@@ -193,8 +177,6 @@ fn string_to_status(value: &str) -> Result<SubscriberStatus> {
         "active" => Ok(SubscriberStatus::Active),
         "suspended" => Ok(SubscriberStatus::Suspended),
         "terminated" => Ok(SubscriberStatus::Terminated),
-        _ => Err(anyhow::anyhow!(
-            "invalid subscriber status: {value}"
-        )),
+        _ => Err(anyhow::anyhow!("invalid subscriber status: {value}")),
     }
 }

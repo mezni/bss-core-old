@@ -1,6 +1,6 @@
 use actix_web::{App, HttpResponse, HttpServer, Responder, web};
 use anyhow::Result;
-use telco_si::application::subscriber::SubscriberService;
+use telco_si::application::{AppState, subscriber::SubscriberService};
 use telco_si::config::AppConfig;
 use telco_si::database::create_pool;
 use telco_si::infrastructure::persistence::subscriber_repository::SqliteSubscriberRepository;
@@ -35,27 +35,23 @@ async fn main() -> Result<()> {
 
     let pool = create_pool(&config.database_url).await?;
 
-    sqlx::migrate!("./migrations")
-        .run(&pool)
-        .await?;
+    sqlx::migrate!("./migrations").run(&pool).await?;
 
     let database_check: (i64,) = sqlx::query_as("SELECT 1").fetch_one(&pool).await?;
 
     info!(result = database_check.0, "database connection verified");
 
-    let subscriber_repository =
-        SqliteSubscriberRepository::new(pool.clone());
+    let subscriber_repository = SqliteSubscriberRepository::new(pool.clone());
 
-    let subscriber_service =
-        SubscriberService::new(subscriber_repository);
+    let subscriber_service = SubscriberService::new(subscriber_repository);
+
+    let app_state = AppState::new(subscriber_service);
 
     let bind_address = format!("{}:{}", config.host, config.port);
 
     HttpServer::new(move || {
         App::new()
-            .app_data(web::Data::new(
-                subscriber_service.clone(),
-            ))
+            .app_data(web::Data::new(app_state.clone()))
             .route("/health", web::get().to(health))
             .configure(subscriber::configure)
     })

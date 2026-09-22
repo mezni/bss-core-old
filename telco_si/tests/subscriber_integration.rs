@@ -1,11 +1,8 @@
-use actix_web::{test, web, App};
-use sqlx::{
-    sqlite::SqlitePoolOptions,
-    SqlitePool,
-};
+use actix_web::{App, test, web};
+use sqlx::{SqlitePool, sqlite::SqlitePoolOptions};
 
 use telco_si::{
-    application::subscriber::SubscriberService,
+    application::{AppState, subscriber::SubscriberService},
     infrastructure::persistence::subscriber_repository::SqliteSubscriberRepository,
     interfaces::http::subscriber,
 };
@@ -37,10 +34,7 @@ async fn create_and_get_subscriber() {
         .await
         .expect("subscriber creation failed");
 
-    assert_eq!(
-        subscriber.account_number().value(),
-        "ACC-10001"
-    );
+    assert_eq!(subscriber.account_number().value(), "ACC-10001");
 
     assert_eq!(
         subscriber.status(),
@@ -55,15 +49,9 @@ async fn create_and_get_subscriber() {
         .expect("subscriber lookup failed")
         .expect("subscriber should exist");
 
-    assert_eq!(
-        loaded.id().value(),
-        subscriber_id
-    );
+    assert_eq!(loaded.id().value(), subscriber_id);
 
-    assert_eq!(
-        loaded.account_number().value(),
-        "ACC-10001"
-    );
+    assert_eq!(loaded.account_number().value(), "ACC-10001");
 }
 
 #[tokio::test]
@@ -78,15 +66,11 @@ async fn duplicate_account_number_is_rejected() {
         .await
         .expect("first subscriber should be created");
 
-    let result = service
-        .create("ACC-20001".to_string())
-        .await;
+    let result = service.create("ACC-20001".to_string()).await;
 
     assert!(matches!(
         result,
-        Err(
-            telco_si::application::error::ApplicationError::AccountNumberAlreadyExists
-        )
+        Err(telco_si::application::error::ApplicationError::AccountNumberAlreadyExists)
     ));
 }
 
@@ -104,30 +88,21 @@ async fn subscriber_lifecycle_is_persisted() {
 
     let id = subscriber.id().value();
 
-    let subscriber = service
-        .suspend(id)
-        .await
-        .expect("suspend failed");
+    let subscriber = service.suspend(id).await.expect("suspend failed");
 
     assert_eq!(
         subscriber.status(),
         telco_si::domain::subscriber::SubscriberStatus::Suspended
     );
 
-    let subscriber = service
-        .activate(id)
-        .await
-        .expect("activate failed");
+    let subscriber = service.activate(id).await.expect("activate failed");
 
     assert_eq!(
         subscriber.status(),
         telco_si::domain::subscriber::SubscriberStatus::Active
     );
 
-    let subscriber = service
-        .terminate(id)
-        .await
-        .expect("terminate failed");
+    let subscriber = service.terminate(id).await.expect("terminate failed");
 
     assert_eq!(
         subscriber.status(),
@@ -152,10 +127,11 @@ async fn create_subscriber_through_http() {
 
     let repository = SqliteSubscriberRepository::new(pool);
     let service = SubscriberService::new(repository);
+    let state = AppState::new(service);
 
     let app = test::init_service(
         App::new()
-            .app_data(web::Data::new(service))
+            .app_data(web::Data::new(state))
             .configure(subscriber::configure),
     )
     .await;

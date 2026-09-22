@@ -1,89 +1,71 @@
-use actix_web::{
-    HttpResponse,
-    Result,
-    web,
-};
+use actix_web::{HttpResponse, Result, web};
 use uuid::Uuid;
 
-use crate::{
-    application::{
-        error::ApplicationError,
-        subscriber::SubscriberService,
-    },
-    infrastructure::persistence::subscriber_repository::SqliteSubscriberRepository,
-};
+use crate::application::{AppState, error::ApplicationError};
 
-use super::dto::{
-    CreateSubscriberRequest,
-    SubscriberResponse,
-};
-
-type SubscriberAppService =
-    SubscriberService<SqliteSubscriberRepository>;
+use super::dto::{CreateSubscriberRequest, SubscriberResponse};
 
 pub async fn create_subscriber(
-    service: web::Data<SubscriberAppService>,
+    state: web::Data<AppState>,
     request: web::Json<CreateSubscriberRequest>,
 ) -> Result<HttpResponse, ApplicationError> {
-    let subscriber = service
+    let subscriber = state
+        .subscriber_service
         .create(request.account_number.clone())
         .await?;
 
-    Ok(HttpResponse::Created()
-        .json(SubscriberResponse::from(subscriber)))
+    Ok(HttpResponse::Created().json(SubscriberResponse::from(subscriber)))
 }
 
 pub async fn get_subscriber(
-    service: web::Data<SubscriberAppService>,
+    state: web::Data<AppState>,
     subscriber_id: web::Path<Uuid>,
 ) -> Result<HttpResponse, ApplicationError> {
-    match service
+    match state
+        .subscriber_service
         .get(subscriber_id.into_inner())
         .await?
     {
-        Some(subscriber) => {
-            Ok(HttpResponse::Ok()
-                .json(SubscriberResponse::from(subscriber)))
-        }
+        Some(subscriber) => Ok(HttpResponse::Ok().json(SubscriberResponse::from(subscriber))),
 
         None => Err(ApplicationError::SubscriberNotFound),
     }
 }
 
 pub async fn suspend_subscriber(
-    service: web::Data<SubscriberAppService>,
+    state: web::Data<AppState>,
     subscriber_id: web::Path<Uuid>,
 ) -> Result<HttpResponse, ApplicationError> {
-    let subscriber = service
+    let subscriber = state
+        .subscriber_service
         .suspend(subscriber_id.into_inner())
         .await?;
 
-    Ok(HttpResponse::Ok()
-        .json(SubscriberResponse::from(subscriber)))
+    Ok(HttpResponse::Ok().json(SubscriberResponse::from(subscriber)))
 }
 
 pub async fn activate_subscriber(
-    service: web::Data<SubscriberAppService>,
+    state: web::Data<AppState>,
     subscriber_id: web::Path<Uuid>,
 ) -> Result<HttpResponse, ApplicationError> {
-    let subscriber = service
+    let subscriber = state
+        .subscriber_service
         .activate(subscriber_id.into_inner())
         .await?;
 
-    Ok(HttpResponse::Ok()
-        .json(SubscriberResponse::from(subscriber)))
+    Ok(HttpResponse::Ok().json(SubscriberResponse::from(subscriber)))
 }
 
 pub async fn terminate_subscriber(
-    service: web::Data<SubscriberAppService>,
+    state: web::Data<AppState>,
     subscriber_id: web::Path<Uuid>,
 ) -> Result<HttpResponse, ApplicationError> {
-    let subscriber = service
+    let subscriber = state
+        .subscriber_service
         .terminate(subscriber_id.into_inner())
         .await?;
 
-    Ok(HttpResponse::Ok()
-        .json(SubscriberResponse::from(subscriber)))
+    Ok(HttpResponse::Ok().json(SubscriberResponse::from(subscriber)))
 }
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
