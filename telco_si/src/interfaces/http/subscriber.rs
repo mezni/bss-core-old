@@ -1,5 +1,6 @@
 use actix_web::{HttpResponse, Result, web};
 use uuid::Uuid;
+use validator::Validate;
 
 use crate::application::{AppState, error::ApplicationError};
 
@@ -9,6 +10,10 @@ pub async fn create_subscriber(
     state: web::Data<AppState>,
     request: web::Json<CreateSubscriberRequest>,
 ) -> Result<HttpResponse, ApplicationError> {
+    request
+        .validate()
+        .map_err(|_| ApplicationError::Validation)?;
+
     let subscriber = state
         .subscriber_service
         .create(request.account_number.clone())

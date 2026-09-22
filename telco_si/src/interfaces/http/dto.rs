@@ -1,14 +1,16 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use validator::Validate;
 
 use crate::domain::subscriber::{Subscriber, SubscriberStatus};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
 pub struct CreateSubscriberRequest {
+    #[validate(length(min = 3, max = 50))]
     pub account_number: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SubscriberResponse {
     pub id: Uuid,
     pub account_number: String,

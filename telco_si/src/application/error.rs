@@ -8,6 +8,9 @@ pub enum ApplicationError {
     #[error("account number already exists")]
     AccountNumberAlreadyExists,
 
+    #[error("validation failed")]
+    Validation,
+
     #[error("invalid request: {0}")]
     InvalidRequest(String),
 

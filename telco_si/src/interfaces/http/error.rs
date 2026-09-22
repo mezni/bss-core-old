@@ -14,6 +14,10 @@ impl ResponseError for ApplicationError {
                 "error": self.to_string()
             })),
 
+            ApplicationError::Validation => HttpResponse::BadRequest().json(json!({
+                "error": self.to_string()
+            })),
+
             ApplicationError::InvalidRequest(_) => HttpResponse::BadRequest().json(json!({
                 "error": self.to_string()
             })),

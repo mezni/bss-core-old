@@ -151,6 +151,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Server startup failed with `unable to open database file` (SQLite code 14) because sqlx 0.9 defaults `create_if_missing` to `false`; the pool is now built with explicit connect options.
 
+### Changed
+
+- `src/application/state.rs` — new `AppState` aggregate holding
+  `subscriber_service` (a `SubscriberService<SqliteSubscriberRepository>`),
+  exported from `src/application/mod.rs` as `AppState`.
+- `src/interfaces/http/subscriber.rs` — all handlers
+  (`create_subscriber`, `get_subscriber`, `suspend_subscriber`,
+  `activate_subscriber`, `terminate_subscriber`) now receive
+  `web::Data<AppState>` and access `state.subscriber_service` instead of
+  receiving the concrete service directly; the `SubscriberAppService` type
+  alias was removed.
+- `src/main.rs` — builds `AppState` from the subscriber service and injects it
+  via `web::Data::new(app_state.clone())` per worker.
+- `tests/subscriber_integration.rs` — `create_subscriber_through_http` builds
+  an `AppState` and injects it with the same dependency structure as
+  production.
+
 ## [0.0.2] - 2026-09-19
 
 ### Added

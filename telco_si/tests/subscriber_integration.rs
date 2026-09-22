@@ -4,7 +4,7 @@ use sqlx::{SqlitePool, sqlite::SqlitePoolOptions};
 use telco_si::{
     application::{AppState, subscriber::SubscriberService},
     infrastructure::persistence::subscriber_repository::SqliteSubscriberRepository,
-    interfaces::http::subscriber,
+    interfaces::http::{dto::SubscriberResponse, subscriber},
 };
 
 async fn create_test_pool() -> SqlitePool {
@@ -146,4 +146,36 @@ async fn create_subscriber_through_http() {
     let response = test::call_service(&app, request).await;
 
     assert_eq!(response.status(), 201);
+
+    let body: SubscriberResponse = test::read_body_json(response).await;
+
+    assert_eq!(body.account_number, "ACC-40001");
+    assert_eq!(body.balance_cents, 0);
+}
+
+#[actix_web::test]
+async fn create_subscriber_rejects_invalid_account_number() {
+    let pool = create_test_pool().await;
+
+    let repository = SqliteSubscriberRepository::new(pool);
+    let service = SubscriberService::new(repository);
+    let state = AppState::new(service);
+
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(state))
+            .configure(subscriber::configure),
+    )
+    .await;
+
+    let request = test::TestRequest::post()
+        .uri("/subscribers")
+        .set_json(serde_json::json!({
+            "account_number": "AB"
+        }))
+        .to_request();
+
+    let response = test::call_service(&app, request).await;
+
+    assert_eq!(response.status(), 400);
 }
