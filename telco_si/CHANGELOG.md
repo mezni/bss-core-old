@@ -168,6 +168,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   an `AppState` and injects it with the same dependency structure as
   production.
 
+### Added
+
+- Dependency: `validator` 0.20 (with `derive`).
+- `src/interfaces/http/dto.rs` — `CreateSubscriberRequest` validates
+  `account_number` via `#[validate(length(min = 3, max = 50))]`;
+  `SubscriberResponse` now derives `Deserialize` so API responses can be
+  decoded directly in integration tests.
+- `src/application/error.rs` — new `ApplicationError::Validation` variant
+  (`"validation failed"`).
+- `src/interfaces/http/subscriber.rs` — `create_subscriber` runs
+  `request.validate()` before creating the subscriber.
+- `src/interfaces/http/error.rs` — `Validation` maps to HTTP 400. The full
+  error mapping is now: 404 `SubscriberNotFound`, 409
+  `AccountNumberAlreadyExists` / `InvalidSubscriberState`, 400
+  `Validation` / `InvalidRequest`, 500 `Infrastructure`.
+- `tests/subscriber_integration.rs`:
+  - `create_subscriber_through_http` now decodes the 201 response body and
+    asserts `account_number` and `balance_cents`.
+  - `create_subscriber_rejects_invalid_account_number` — `POST /subscribers`
+    with a too-short account number returns 400.
+
 ## [0.0.2] - 2026-09-19
 
 ### Added

@@ -1,6 +1,6 @@
 # Session Handoff
 
-_Last updated: 2026-09-20_
+_Last updated: 2026-09-22_
 
 ## Project
 
@@ -39,13 +39,17 @@ code themselves in a step-by-step fashion. The assistant:
     state transitions, `reconstitute()` for DB reads, getters.
 - **Application layer — Subscriber context**:
   - `src/application/error.rs` — `ApplicationError` (`SubscriberNotFound`,
-    `AccountNumberAlreadyExists`, `InvalidRequest`, `InvalidSubscriberState`,
-    `Infrastructure`) + `ApplicationResult<T>`.
+    `AccountNumberAlreadyExists`, `Validation`, `InvalidRequest`,
+    `InvalidSubscriberState`, `Infrastructure`) + `ApplicationResult<T>`.
   - `src/application/subscriber/repository.rs` — `SubscriberRepository` port
     (`create`, `find_by_id`, `find_by_account_number`, `update`).
   - `src/application/subscriber/service.rs` — `SubscriberService<R>` use cases:
     `create` (validates account number, rejects duplicates), `get`,
     `suspend` / `activate` / `terminate` (load → transition → persist).
+  - `src/application/state.rs` — `AppState` aggregate holding
+    `subscriber_service`; re-exported from `src/application/mod.rs` as
+    `AppState`. HTTP handlers now receive `web::Data<AppState>` instead of the
+    concrete service (concrete `SubscriberAppService` type alias removed).
 - **Infrastructure layer**:
   - `src/infrastructure/persistence/subscriber_repository.rs` —
     `SqliteSubscriberRepository` (SQLx) implementing the port; `#[derive(Clone)]`.
@@ -53,22 +57,27 @@ code themselves in a step-by-step fashion. The assistant:
     (`subscribers` table with status/balance CHECKs, unique account_number,
     index on status).
 - **Interfaces layer (HTTP)**:
-  - `src/interfaces/http/dto.rs` — `CreateSubscriberRequest`, `SubscriberResponse`.
+  - `src/interfaces/http/dto.rs` — `CreateSubscriberRequest` (validates
+    `account_number`, length 3–50, via `validator`), `SubscriberResponse`
+    (Serialize + Deserialize so tests can decode bodies).
   - `src/interfaces/http/subscriber.rs` — handlers + `configure()`:
     `POST /subscribers`, `GET /subscribers/{id}`,
     `POST /subscribers/{id}/suspend|activate|terminate`.
   - `src/interfaces/http/error.rs` — `ResponseError for ApplicationError`
-    (404 / 409 / 400 / 409 / 500 generic).
+    (404 / 409 / 400 / 400 / 409 / 500 generic); `Validation` maps to 400.
+  - Dependency added: `validator` 0.20 (with `derive`).
 - **Library crate + tests**:
   - `src/lib.rs` exposes all modules so integration tests can import `telco_si`.
-  - `tests/subscriber_integration.rs` — 4 tests on in-memory SQLite
+  - `tests/subscriber_integration.rs` — 5 tests on in-memory SQLite
     (`max_connections(1)` + migrations): create/get round trip, duplicate
-    account rejected, persisted lifecycle, `POST /subscribers` through HTTP → 201.
-- **Tests** — `cargo test`: domain unit tests (15) + integration tests (4).
+    account rejected, persisted lifecycle, `POST /subscribers` through HTTP →
+    201 (with body assertions), and invalid account number rejected → 400.
+- **Tests** — `cargo test`: domain unit tests (15) + integration tests (5).
 - **Git** — repo root is the monorepo `/home/dali/WORK/utils`; `telco_si/target/`
   and local `*.db` are git-ignored. `CHANGELOG.md` follows Keep a Changelog.
-  Code commits are pushed up to `Add subscribers tests` (f3522c6); the only
-  pending change is the updated `CHANGELOG.md`.
+  Code (incl. AppState + request validation) is committed up to
+  `Add subscriber context` (d9fec5d); the pending changes are the updated
+  `CHANGELOG.md` and this handoff.
 
 ## Decisions so far
 
