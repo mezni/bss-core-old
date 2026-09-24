@@ -4,7 +4,7 @@ use sqlx::{SqlitePool, sqlite::SqlitePoolOptions};
 use telco_si::{
     application::{
         AppState,
-        subscriber::{SubscriberListQuery, SubscriberService},
+        subscriber::{SubscriberListQuery, SubscriberRepository, SubscriberService},
     },
     infrastructure::persistence::subscriber_repository::SqliteSubscriberRepository,
     interfaces::http::{
@@ -184,6 +184,34 @@ async fn create_subscriber_rejects_invalid_account_number() {
     let response = test::call_service(&app, request).await;
 
     assert_eq!(response.status(), 400);
+}
+
+#[tokio::test]
+async fn stale_subscriber_update_is_rejected() {
+    let pool = create_test_pool().await;
+
+    let repository = SqliteSubscriberRepository::new(pool);
+
+    let service = SubscriberService::new(repository.clone());
+
+    let subscriber = service.create("ACC-90001".to_string()).await.unwrap();
+
+    let mut first = service.get(subscriber.id().value()).await.unwrap().unwrap();
+
+    let mut second = service.get(subscriber.id().value()).await.unwrap().unwrap();
+
+    assert_eq!(first.version(), 1);
+    assert_eq!(second.version(), 1);
+
+    first.suspend().unwrap();
+
+    repository.update(&first).await.unwrap();
+
+    second.suspend().unwrap();
+
+    let result = repository.update(&second).await;
+
+    assert!(result.is_err());
 }
 
 #[actix_web::test]

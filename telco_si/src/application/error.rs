@@ -17,6 +17,9 @@ pub enum ApplicationError {
     #[error("invalid subscriber state: {0}")]
     InvalidSubscriberState(String),
 
+    #[error("subscriber was modified by another request")]
+    ConcurrencyConflict,
+
     #[error("infrastructure error: {0}")]
     Infrastructure(#[source] anyhow::Error),
 }

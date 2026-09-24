@@ -15,6 +15,7 @@ pub struct Subscriber {
     plan_id: Option<Uuid>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
+    version: i64,
 }
 
 impl Subscriber {
@@ -29,6 +30,7 @@ impl Subscriber {
             plan_id: None,
             created_at: now,
             updated_at: now,
+            version: 1,
         }
     }
 
@@ -95,6 +97,14 @@ impl Subscriber {
         self.plan_id
     }
 
+    pub fn version(&self) -> i64 {
+        self.version
+    }
+
+    pub fn increment_version(&mut self) {
+        self.version += 1;
+    }
+
     pub fn reconstitute(
         id: SubscriberId,
         account_number: AccountNumber,
@@ -103,6 +113,7 @@ impl Subscriber {
         plan_id: Option<Uuid>,
         created_at: DateTime<Utc>,
         updated_at: DateTime<Utc>,
+        version: i64,
     ) -> Self {
         Self {
             id,
@@ -112,6 +123,7 @@ impl Subscriber {
             plan_id,
             created_at,
             updated_at,
+            version,
         }
     }
 

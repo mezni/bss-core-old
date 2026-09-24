@@ -20,6 +20,7 @@ struct SubscriberRow {
     plan_id: Option<String>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
+    version: i64,
 }
 
 impl SubscriberRow {
@@ -48,6 +49,7 @@ impl SubscriberRow {
             plan_id,
             self.created_at,
             self.updated_at,
+            self.version,
         ))
     }
 }
@@ -83,9 +85,10 @@ impl SubscriberRepository for SqliteSubscriberRepository {
                 balance_cents,
                 plan_id,
                 created_at,
-                updated_at
+                updated_at,
+                version
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             "#,
         )
         .bind(subscriber.id().value().to_string())
@@ -95,6 +98,7 @@ impl SubscriberRepository for SqliteSubscriberRepository {
         .bind(subscriber.plan_id().map(|id| id.to_string()))
         .bind(subscriber.created_at())
         .bind(subscriber.updated_at())
+        .bind(subscriber.version())
         .execute(&self.pool)
         .await
         .context("failed to create subscriber")?;
@@ -112,7 +116,8 @@ impl SubscriberRepository for SqliteSubscriberRepository {
                 balance_cents,
                 plan_id,
                 created_at,
-                updated_at
+                updated_at,
+                version
             FROM subscribers
             WHERE id = ?
             "#,
@@ -135,7 +140,8 @@ impl SubscriberRepository for SqliteSubscriberRepository {
                 balance_cents,
                 plan_id,
                 created_at,
-                updated_at
+                updated_at,
+                version
             FROM subscribers
             WHERE account_number = ?
             "#,
@@ -149,27 +155,46 @@ impl SubscriberRepository for SqliteSubscriberRepository {
     }
 
     async fn update(&self, subscriber: &Subscriber) -> Result<()> {
-        sqlx::query(
+        let result = sqlx::query(
             r#"
             UPDATE subscribers
             SET
-                account_number = ?,
                 status = ?,
                 balance_cents = ?,
                 plan_id = ?,
-                updated_at = ?
+                updated_at = ?,
+                version = version + 1
             WHERE id = ?
+              AND version = ?
             "#,
         )
-        .bind(subscriber.account_number().value())
         .bind(status_to_string(subscriber.status()))
         .bind(subscriber.balance().cents())
         .bind(subscriber.plan_id().map(|id| id.to_string()))
         .bind(subscriber.updated_at())
         .bind(subscriber.id().value().to_string())
+        .bind(subscriber.version())
         .execute(&self.pool)
         .await
         .context("failed to update subscriber")?;
+
+        if result.rows_affected() == 0 {
+            let exists: Option<(i64,)> =
+                sqlx::query_as("SELECT version FROM subscribers WHERE id = ?")
+                    .bind(subscriber.id().value().to_string())
+                    .fetch_optional(&self.pool)
+                    .await
+                    .context("failed to verify subscriber after update conflict")?;
+
+            match exists {
+                None => {
+                    anyhow::bail!("subscriber does not exist");
+                }
+                Some(_) => {
+                    anyhow::bail!("subscriber update conflict");
+                }
+            }
+        }
 
         Ok(())
     }

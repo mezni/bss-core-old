@@ -84,6 +84,8 @@ where
             .await
             .map_err(ApplicationError::Infrastructure)?;
 
+        subscriber.increment_version();
+
         Ok(subscriber)
     }
 
@@ -106,6 +108,8 @@ where
             .await
             .map_err(ApplicationError::Infrastructure)?;
 
+        subscriber.increment_version();
+
         Ok(subscriber)
     }
 
@@ -127,6 +131,8 @@ where
             .update(&subscriber)
             .await
             .map_err(ApplicationError::Infrastructure)?;
+
+        subscriber.increment_version();
 
         Ok(subscriber)
     }

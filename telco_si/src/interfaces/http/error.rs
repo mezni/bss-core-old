@@ -26,6 +26,10 @@ impl ResponseError for ApplicationError {
                 "error": self.to_string()
             })),
 
+            ApplicationError::ConcurrencyConflict => HttpResponse::Conflict().json(json!({
+                "error": self.to_string()
+            })),
+
             ApplicationError::Infrastructure(error) => {
                 tracing::error!(
                     error = %error,
