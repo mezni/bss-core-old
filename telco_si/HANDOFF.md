@@ -1,6 +1,6 @@
 # Session Handoff
 
-_Last updated: 2026-09-22_
+_Last updated: 2026-09-24_
 
 ## Project
 
@@ -19,65 +19,71 @@ code themselves in a step-by-step fashion. The assistant:
 
 ## Current state (this session)
 
-- **Runtime/API (0.0.x)** — implemented and working:
-  - Actix Web server + `GET /health` returning `{"status": "ok"}`.
-  - Config loader (`AppConfig` from `APP_HOST` / `APP_PORT` / `DATABASE_URL`).
-  - SQLx 0.9 + SQLite pool with `create_if_missing(true)`, WAL, foreign keys,
-    `max_connections(10)`; `SELECT 1` verification before binding; migrations
-    run on startup. Deps: actix-web, tokio, sqlx, anyhow, async-trait,
-    thiserror, tracing, tracing-subscriber, uuid, chrono, serde.
-- **Domain layer — Subscriber context** — implemented and tested:
-  - `src/domain/subscriber/error.rs` — `SubscriberError` (thiserror):
-    `AlreadySuspended`, `AlreadyActive`, `Terminated`, `InvalidTermination`,
-    `NegativeBalance`, `InvalidAccountNumber`.
-  - `src/domain/subscriber/value_objects.rs` — `SubscriberStatus`,
-    `SubscriberId` (UUID v4, `new()` / `from_uuid()`), `AccountNumber`
-    (non-empty validation), `Money` (`zero()` / `from_cents()` rejects
-    negative via `NegativeBalance` / `cents()` / `add()`).
-  - `src/domain/subscriber/entity.rs` — `Subscriber` aggregate: `new()`
-    (starts Active, zero balance), `suspend()` / `activate()` / `terminate()`
-    state transitions, `reconstitute()` for DB reads, getters.
-- **Application layer — Subscriber context**:
-  - `src/application/error.rs` — `ApplicationError` (`SubscriberNotFound`,
-    `AccountNumberAlreadyExists`, `Validation`, `InvalidRequest`,
-    `InvalidSubscriberState`, `Infrastructure`) + `ApplicationResult<T>`.
-  - `src/application/subscriber/repository.rs` — `SubscriberRepository` port
-    (`create`, `find_by_id`, `find_by_account_number`, `update`).
-  - `src/application/subscriber/service.rs` — `SubscriberService<R>` use cases:
-    `create` (validates account number, rejects duplicates), `get`,
-    `suspend` / `activate` / `terminate` (load → transition → persist).
-  - `src/application/state.rs` — `AppState` aggregate holding
-    `subscriber_service`; re-exported from `src/application/mod.rs` as
-    `AppState`. HTTP handlers now receive `web::Data<AppState>` instead of the
-    concrete service (concrete `SubscriberAppService` type alias removed).
-- **Infrastructure layer**:
-  - `src/infrastructure/persistence/subscriber_repository.rs` —
-    `SqliteSubscriberRepository` (SQLx) implementing the port; `#[derive(Clone)]`.
-  - `migrations/` — `initial_schema.sql` + `create_subscribers.sql`
-    (`subscribers` table with status/balance CHECKs, unique account_number,
-    index on status).
-- **Interfaces layer (HTTP)**:
-  - `src/interfaces/http/dto.rs` — `CreateSubscriberRequest` (validates
-    `account_number`, length 3–50, via `validator`), `SubscriberResponse`
-    (Serialize + Deserialize so tests can decode bodies).
-  - `src/interfaces/http/subscriber.rs` — handlers + `configure()`:
-    `POST /subscribers`, `GET /subscribers/{id}`,
-    `POST /subscribers/{id}/suspend|activate|terminate`.
-  - `src/interfaces/http/error.rs` — `ResponseError for ApplicationError`
-    (404 / 409 / 400 / 400 / 409 / 500 generic); `Validation` maps to 400.
-  - Dependency added: `validator` 0.20 (with `derive`).
-- **Library crate + tests**:
-  - `src/lib.rs` exposes all modules so integration tests can import `telco_si`.
-  - `tests/subscriber_integration.rs` — 5 tests on in-memory SQLite
-    (`max_connections(1)` + migrations): create/get round trip, duplicate
-    account rejected, persisted lifecycle, `POST /subscribers` through HTTP →
-    201 (with body assertions), and invalid account number rejected → 400.
-- **Tests** — `cargo test`: domain unit tests (15) + integration tests (5).
+Runtime/API (0.0.1–0.0.2 Foundation) and Phase 2 Subscriber context are
+implemented and tested end to end. The changelog now tracks this as
+**0.0.5 (Foundation + Subscriber)**, dated 2026-09-24.
+
+- **HTTP API** (`src/interfaces/http/`):
+  - `POST /subscribers` (201), `GET /subscribers/{id}` (200/404),
+    `POST /subscribers/{id}/suspend|activate|terminate` (200), all via
+    `AppState` + `web::Data`. Central `ResponseError` maps `ApplicationError`
+    to 404/409/400/400/409/500.
+  - `GET /subscribers` — paginated list (default `page=1`, `page_size=20`,
+    guards `page >= 1`, `1 <= page_size <= 100`) with optional
+    `status` / `account_number` filters; invalid `status` → 400 via
+    `parse_status()`.
+- **Read models / query object**:
+  - `src/application/subscriber/query.rs` — `SubscriberListItem`,
+    `SubscriberPage`, and `SubscriberListQuery` (`page`, `page_size`,
+    `status: Option<SubscriberStatus>`, `account_number`). List operations
+    never rebuild the full aggregate.
+  - HTTP DTO `SubscriberListRequest` (raw strings) is converted to the typed
+    application query in the handler — arbitrary status strings can't reach
+    the application layer.
+  - `src/infrastructure/persistence/subscriber_repository.rs` `list()`
+    builds page + `COUNT(*)` SQL with `sqlx::QueryBuilder` (dynamic
+    structure, bound values only → no SQL injection).
+- **Optimistic concurrency** (`version` column):
+  - Migration `20260924153511_add_subscriber_version.sql`.
+  - Domain `Subscriber` carries `version` (`version()`, `increment_version()`);
+    `reconstitute()` reads it from the DB.
+  - `ApplicationError::ConcurrencyConflict` added and mapped to 409, but the
+    repository still returns `anyhow` (conflicts surface as
+    `Infrastructure` → 500 today); a typed repository error design
+    (`NotFound`/`Duplicate`/`ConcurrencyConflict`/`Database`) is deferred.
+- **Domain events**:
+  - `src/domain/events.rs` — `DomainEvent` (`SubscriberSuspended`,
+    `SubscriberActivated`, `SubscriberTerminated`), past-tense facts,
+    `Serialize + Deserialize`, metadata helpers `event_type()` /
+    `aggregate_type()` / `aggregate_id()` / `occurred_at()`.
+  - `Subscriber` collects events: empty on `new()`/`reconstitute()`, pushed
+    only after valid transitions, read via `domain_events()` slice,
+    drained by `take_domain_events()` / `clear_domain_events()`.
+  - `src/application/event_publisher.rs` — `EventPublisher` port;
+    `src/infrastructure/events/in_memory.rs` — `InMemoryEventPublisher`.
+    **Not wired into the service yet** (durability problem → outbox).
+- **Transactional outbox**:
+  - Migration `20260924155420_create_outbox_events.sql` (with
+    `(published_at, created_at)` index for the future publisher worker).
+  - Repository `update()` replaced by
+    `save(&subscriber, &[DomainEvent])`: single transaction =
+    optimistic-lock `UPDATE` + one `INSERT` per event into `outbox_events`
+    (JSON payload). Any failure rolls back both.
+  - Service `suspend`/`activate`/`terminate`:
+    mutate → `domain_events().to_vec()` → `save()` → `clear_domain_events()`
+    → `increment_version()`. `create()` still uses `repository.create()`
+    (no `SubscriberCreated` event yet).
+- **Tests** — `cargo test`: 17 domain unit tests + 12 integration tests
+  (create/get, duplicate, lifecycle, HTTP create 201 / invalid 400, list
+  pagination, status/account_number filters, invalid status 400, stale update
+  rejected, outbox row on suspend).
+- **CHANGELOG.md** — Keep a Changelog. Version history consolidated: only
+  `0.0.5` (newest), `0.0.2`, `0.0.1`; `0.0.3`/`0.0.4` were removed (never
+  released); empty `## [Unreleased]` sits at the top for future work.
 - **Git** — repo root is the monorepo `/home/dali/WORK/utils`; `telco_si/target/`
-  and local `*.db` are git-ignored. `CHANGELOG.md` follows Keep a Changelog.
-  Code (incl. AppState + request validation) is committed up to
-  `Add subscriber context` (d9fec5d); the pending changes are the updated
-  `CHANGELOG.md` and this handoff.
+  and local `*.db` are git-ignored. Code + CHANGELOG committed through
+  `389d83e Add transactional Outbox Pattern`; the pending change is this
+  updated handoff.
 
 ## Decisions so far
 
@@ -89,13 +95,20 @@ code themselves in a step-by-step fashion. The assistant:
   hard error (`NegativeBalance`).
 - Application errors are typed (`ApplicationError`) and mapped to HTTP status
   codes once, centrally, via `ResponseError`.
-- Library crate (`src/lib.rs`) alongside the binary so integration tests can
-  import application modules.
+- Read models (`SubscriberListItem`/`SubscriberPage`) are separate from the
+  aggregate; query filters are typed domain values, not raw strings.
+- Optimistic locking via `version` (conditional `UPDATE ... AND version = ?`).
+- State transitions emit domain events only on success; events are persisted
+  with the aggregate in one transaction (outbox), never written to the
+  publisher directly from a request (avoid DB-update/event-inconsistency).
+- `EventPublisher` port is dependency-inverted (in-memory impl for now).
 
 ## Next steps (when user provides them)
 
-1. Phase 2 — Subscriber context continues: more use cases/handlers as directed
-   (e.g. balance operations), then remaining bounded contexts.
+1. Subscriber context continues (part 8+): likely an outbox publisher worker
+   that drains `outbox_events` where `published_at IS NULL` and dispatches via
+   `EventPublisher`; possibly a `SubscriberCreated` event so `create()` also
+   joins the outbox; possibly typed repository errors.
 2. Phase 3 — Inventory (MSISDN, SIM/IMSI).
 3. Phase 4 — Device (IMEI).
 4. Phase 5 — Usage / CDR.
@@ -105,7 +118,7 @@ code themselves in a step-by-step fashion. The assistant:
 8. Phase 9 — Payments.
 9. Phase 10 — Dunning.
 10. Phase 11 — Documents / PDF.
-11. Phase 12 — Production architecture (events, outbox, observability, security, Docker, CI/CD).
+11. Phase 12 — Production architecture (events, outbox worker, observability, security, Docker, CI/CD).
 
 ## Reminders for the next session
 
@@ -115,3 +128,5 @@ code themselves in a step-by-step fashion. The assistant:
   fast-forward from `origin/main`.
 - `cargo build`/`cargo test` may stall on first run (network fetch); use
   `--offline` if dependencies are already cached.
+- `cargo sqlx migrate ...` needs `DATABASE_URL` (e.g.
+  `DATABASE_URL=sqlite://telco_si.db cargo sqlx migrate info`).
