@@ -2,13 +2,17 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use sqlx::{QueryBuilder, SqlitePool};
+use uuid::Uuid;
 
 use crate::{
     application::subscriber::{
         query::{SubscriberListItem, SubscriberListQuery},
         repository::SubscriberRepository,
     },
-    domain::subscriber::{AccountNumber, Money, Subscriber, SubscriberId, SubscriberStatus},
+    domain::{
+        events::DomainEvent,
+        subscriber::{AccountNumber, Money, Subscriber, SubscriberId, SubscriberStatus},
+    },
 };
 
 #[derive(Debug, sqlx::FromRow)]
@@ -154,7 +158,9 @@ impl SubscriberRepository for SqliteSubscriberRepository {
         row.map(SubscriberRow::into_domain).transpose()
     }
 
-    async fn update(&self, subscriber: &Subscriber) -> Result<()> {
+    async fn save(&self, subscriber: &Subscriber, events: &[DomainEvent]) -> Result<()> {
+        let mut tx = self.pool.begin().await?;
+
         let result = sqlx::query(
             r#"
             UPDATE subscribers
@@ -174,27 +180,43 @@ impl SubscriberRepository for SqliteSubscriberRepository {
         .bind(subscriber.updated_at())
         .bind(subscriber.id().value().to_string())
         .bind(subscriber.version())
-        .execute(&self.pool)
-        .await
-        .context("failed to update subscriber")?;
+        .execute(&mut *tx)
+        .await?;
 
         if result.rows_affected() == 0 {
-            let exists: Option<(i64,)> =
-                sqlx::query_as("SELECT version FROM subscribers WHERE id = ?")
-                    .bind(subscriber.id().value().to_string())
-                    .fetch_optional(&self.pool)
-                    .await
-                    .context("failed to verify subscriber after update conflict")?;
-
-            match exists {
-                None => {
-                    anyhow::bail!("subscriber does not exist");
-                }
-                Some(_) => {
-                    anyhow::bail!("subscriber update conflict");
-                }
-            }
+            anyhow::bail!("subscriber update conflict");
         }
+
+        for event in events {
+            let event_id = Uuid::new_v4();
+            let payload = serde_json::to_string(event)?;
+
+            sqlx::query(
+                r#"
+                INSERT INTO outbox_events (
+                    id,
+                    aggregate_type,
+                    aggregate_id,
+                    event_type,
+                    payload,
+                    occurred_at,
+                    created_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                "#,
+            )
+            .bind(event_id.to_string())
+            .bind(event.aggregate_type())
+            .bind(event.aggregate_id().to_string())
+            .bind(event.event_type())
+            .bind(payload)
+            .bind(event.occurred_at())
+            .bind(Utc::now())
+            .execute(&mut *tx)
+            .await?;
+        }
+
+        tx.commit().await?;
 
         Ok(())
     }

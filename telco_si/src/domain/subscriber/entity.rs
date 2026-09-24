@@ -128,6 +128,10 @@ impl Subscriber {
         &self.events
     }
 
+    pub fn clear_domain_events(&mut self) {
+        self.events.clear();
+    }
+
     pub fn take_domain_events(&mut self) -> Vec<DomainEvent> {
         std::mem::take(&mut self.events)
     }

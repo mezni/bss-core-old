@@ -205,13 +205,44 @@ async fn stale_subscriber_update_is_rejected() {
 
     first.suspend().unwrap();
 
-    repository.update(&first).await.unwrap();
+    repository
+        .save(&first, first.domain_events())
+        .await
+        .unwrap();
 
     second.suspend().unwrap();
 
-    let result = repository.update(&second).await;
+    let result = repository.save(&second, second.domain_events()).await;
 
     assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn suspend_persists_domain_event_to_outbox() {
+    let pool = create_test_pool().await;
+    let query_pool = pool.clone();
+
+    let repository = SqliteSubscriberRepository::new(pool);
+    let service = SubscriberService::new(repository);
+
+    let subscriber = service.create("ACC-100".to_string()).await.unwrap();
+
+    service.suspend(subscriber.id().value()).await.unwrap();
+
+    let row: (String, String, String) = sqlx::query_as(
+        r#"
+        SELECT event_type, aggregate_type, payload
+        FROM outbox_events
+        LIMIT 1
+        "#,
+    )
+    .fetch_one(&query_pool)
+    .await
+    .unwrap();
+
+    assert_eq!(row.0, "subscriber.suspended");
+    assert_eq!(row.1, "subscriber");
+    assert!(row.2.contains("SubscriberSuspended"));
 }
 
 #[actix_web::test]

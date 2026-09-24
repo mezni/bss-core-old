@@ -79,11 +79,14 @@ where
             .suspend()
             .map_err(|error| ApplicationError::InvalidSubscriberState(error.to_string()))?;
 
+        let events = subscriber.domain_events().to_vec();
+
         self.repository
-            .update(&subscriber)
+            .save(&subscriber, &events)
             .await
             .map_err(ApplicationError::Infrastructure)?;
 
+        subscriber.clear_domain_events();
         subscriber.increment_version();
 
         Ok(subscriber)
@@ -103,11 +106,14 @@ where
             .activate()
             .map_err(|error| ApplicationError::InvalidSubscriberState(error.to_string()))?;
 
+        let events = subscriber.domain_events().to_vec();
+
         self.repository
-            .update(&subscriber)
+            .save(&subscriber, &events)
             .await
             .map_err(ApplicationError::Infrastructure)?;
 
+        subscriber.clear_domain_events();
         subscriber.increment_version();
 
         Ok(subscriber)
@@ -127,11 +133,14 @@ where
             .terminate()
             .map_err(|error| ApplicationError::InvalidSubscriberState(error.to_string()))?;
 
+        let events = subscriber.domain_events().to_vec();
+
         self.repository
-            .update(&subscriber)
+            .save(&subscriber, &events)
             .await
             .map_err(ApplicationError::Infrastructure)?;
 
+        subscriber.clear_domain_events();
         subscriber.increment_version();
 
         Ok(subscriber)
