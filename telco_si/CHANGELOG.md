@@ -189,6 +189,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `create_subscriber_rejects_invalid_account_number` — `POST /subscribers`
     with a too-short account number returns 400.
 
+### Added
+
+- `GET /subscribers` — paginated list endpoint (first read-model/query step,
+  Phase 2, Subscriber context, part 4):
+  - `src/application/subscriber/query.rs` — `SubscriberListItem`
+    (`id`, `account_number`, `status`, `balance_cents`) and `SubscriberPage`
+    read models, deliberately separate from the `Subscriber` aggregate so a
+    list screen doesn't load the full domain object.
+  - `src/application/subscriber/repository.rs` — `SubscriberRepository::list()`
+    returning `(Vec<SubscriberListItem>, u64)` instead of `Subscriber`.
+  - `src/infrastructure/persistence/subscriber_repository.rs` — SQL query
+    (`ORDER BY created_at DESC`, `LIMIT`/`OFFSET`) plus a `COUNT(*)` total,
+    via a dedicated `SubscriberListRow`.
+  - `src/application/subscriber/service.rs` — `SubscriberService::list()`
+    with pagination guards: `page >= 1`, `1 <= page_size <= 100`.
+  - `src/interfaces/http/dto.rs` — `SubscriberListItemResponse`,
+    `SubscriberListResponse` (with `From<SubscriberListItem>`), and
+    `SubscriberListQuery` (`page`, `page_size`, defaulting to 1 and 20).
+  - `src/interfaces/http/subscriber.rs` — `list_subscribers` handler and
+    route registration so `GET`/`POST /subscribers` share the resource URL.
+- Integration tests (`tests/subscriber_integration.rs`):
+  - `list_subscribers_returns_paginated_results` — HTTP list returns 200 with
+    items and correct `page`/`page_size`/`total`.
+  - `subscriber_pagination_returns_correct_page` — service-level pagination
+    (3 rows, page 2 of size 2 yields 1 item, total 3).
+
 ## [0.0.2] - 2026-09-19
 
 ### Added
