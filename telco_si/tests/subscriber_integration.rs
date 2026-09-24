@@ -4,7 +4,10 @@ use sqlx::{SqlitePool, sqlite::SqlitePoolOptions};
 use telco_si::{
     application::{AppState, subscriber::SubscriberService},
     infrastructure::persistence::subscriber_repository::SqliteSubscriberRepository,
-    interfaces::http::{dto::SubscriberResponse, subscriber},
+    interfaces::http::{
+        dto::{SubscriberListResponse, SubscriberResponse},
+        subscriber,
+    },
 };
 
 async fn create_test_pool() -> SqlitePool {
@@ -178,4 +181,59 @@ async fn create_subscriber_rejects_invalid_account_number() {
     let response = test::call_service(&app, request).await;
 
     assert_eq!(response.status(), 400);
+}
+
+#[actix_web::test]
+async fn list_subscribers_returns_paginated_results() {
+    let pool = create_test_pool().await;
+
+    let repository = SqliteSubscriberRepository::new(pool);
+    let service = SubscriberService::new(repository);
+
+    service.create("ACC-50001".to_string()).await.unwrap();
+
+    service.create("ACC-50002".to_string()).await.unwrap();
+
+    let state = AppState::new(service);
+
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(state))
+            .configure(subscriber::configure),
+    )
+    .await;
+
+    let request = test::TestRequest::get()
+        .uri("/subscribers?page=1&page_size=10")
+        .to_request();
+
+    let response = test::call_service(&app, request).await;
+
+    assert_eq!(response.status(), 200);
+
+    let body: SubscriberListResponse = test::read_body_json(response).await;
+
+    assert_eq!(body.page, 1);
+    assert_eq!(body.page_size, 10);
+    assert_eq!(body.total, 2);
+    assert_eq!(body.items.len(), 2);
+}
+
+#[tokio::test]
+async fn subscriber_pagination_returns_correct_page() {
+    let pool = create_test_pool().await;
+
+    let repository = SqliteSubscriberRepository::new(pool);
+    let service = SubscriberService::new(repository);
+
+    for account in ["ACC-60001", "ACC-60002", "ACC-60003"] {
+        service.create(account.to_string()).await.unwrap();
+    }
+
+    let result = service.list(2, 2).await.unwrap();
+
+    assert_eq!(result.page, 2);
+    assert_eq!(result.page_size, 2);
+    assert_eq!(result.total, 3);
+    assert_eq!(result.items.len(), 1);
 }

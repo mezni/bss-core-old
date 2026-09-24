@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 use sqlx::SqlitePool;
 
 use crate::{
-    application::subscriber::repository::SubscriberRepository,
+    application::subscriber::{query::SubscriberListItem, repository::SubscriberRepository},
     domain::subscriber::{AccountNumber, Money, Subscriber, SubscriberId, SubscriberStatus},
 };
 
@@ -47,6 +47,14 @@ impl SubscriberRow {
             self.updated_at,
         ))
     }
+}
+
+#[derive(Debug, sqlx::FromRow)]
+struct SubscriberListRow {
+    id: String,
+    account_number: String,
+    status: String,
+    balance_cents: i64,
 }
 
 #[derive(Clone)]
@@ -161,6 +169,44 @@ impl SubscriberRepository for SqliteSubscriberRepository {
         .context("failed to update subscriber")?;
 
         Ok(())
+    }
+
+    async fn list(&self, offset: u32, limit: u32) -> Result<(Vec<SubscriberListItem>, u64)> {
+        let rows = sqlx::query_as::<_, SubscriberListRow>(
+            r#"
+            SELECT
+                id,
+                account_number,
+                status,
+                balance_cents
+            FROM subscribers
+            ORDER BY created_at DESC
+            LIMIT ? OFFSET ?
+            "#,
+        )
+        .bind(limit)
+        .bind(offset)
+        .fetch_all(&self.pool)
+        .await
+        .context("failed to list subscribers")?;
+
+        let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM subscribers")
+            .fetch_one(&self.pool)
+            .await
+            .context("failed to count subscribers")?;
+
+        let items = rows
+            .into_iter()
+            .map(|row| SubscriberListItem {
+                id: uuid::Uuid::parse_str(&row.id)
+                    .expect("database contains invalid subscriber UUID"),
+                account_number: row.account_number,
+                status: row.status,
+                balance_cents: row.balance_cents,
+            })
+            .collect();
+
+        Ok((items, total.0 as u64))
     }
 }
 

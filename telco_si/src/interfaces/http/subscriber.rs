@@ -4,7 +4,9 @@ use validator::Validate;
 
 use crate::application::{AppState, error::ApplicationError};
 
-use super::dto::{CreateSubscriberRequest, SubscriberResponse};
+use super::dto::{
+    CreateSubscriberRequest, SubscriberListQuery, SubscriberListResponse, SubscriberResponse,
+};
 
 pub async fn create_subscriber(
     state: web::Data<AppState>,
@@ -73,9 +75,29 @@ pub async fn terminate_subscriber(
     Ok(HttpResponse::Ok().json(SubscriberResponse::from(subscriber)))
 }
 
+pub async fn list_subscribers(
+    state: web::Data<AppState>,
+    query: web::Query<SubscriberListQuery>,
+) -> Result<HttpResponse, ApplicationError> {
+    let page = query.page.unwrap_or(1);
+    let page_size = query.page_size.unwrap_or(20);
+
+    let result = state.subscriber_service.list(page, page_size).await?;
+
+    let response = SubscriberListResponse {
+        items: result.items.into_iter().map(Into::into).collect(),
+        page: result.page,
+        page_size: result.page_size,
+        total: result.total,
+    };
+
+    Ok(HttpResponse::Ok().json(response))
+}
+
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/subscribers")
+            .route("", web::get().to(list_subscribers))
             .route("", web::post().to(create_subscriber))
             .route("/{id}", web::get().to(get_subscriber))
             .route("/{id}/suspend", web::post().to(suspend_subscriber))

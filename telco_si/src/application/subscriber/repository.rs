@@ -1,6 +1,9 @@
 use anyhow::Result;
 
-use crate::domain::subscriber::{Subscriber, SubscriberId};
+use crate::{
+    application::subscriber::query::SubscriberListItem,
+    domain::subscriber::{Subscriber, SubscriberId},
+};
 
 #[async_trait::async_trait]
 pub trait SubscriberRepository: Send + Sync {
@@ -11,4 +14,6 @@ pub trait SubscriberRepository: Send + Sync {
     async fn find_by_account_number(&self, account_number: &str) -> Result<Option<Subscriber>>;
 
     async fn update(&self, subscriber: &Subscriber) -> Result<()>;
+
+    async fn list(&self, offset: u32, limit: u32) -> Result<(Vec<SubscriberListItem>, u64)>;
 }

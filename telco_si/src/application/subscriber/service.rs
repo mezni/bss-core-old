@@ -3,7 +3,7 @@ use uuid::Uuid;
 use crate::{
     application::{
         error::{ApplicationError, ApplicationResult},
-        subscriber::repository::SubscriberRepository,
+        subscriber::{query::SubscriberPage, repository::SubscriberRepository},
     },
     domain::subscriber::{AccountNumber, Subscriber, SubscriberId},
 };
@@ -126,5 +126,34 @@ where
             .map_err(ApplicationError::Infrastructure)?;
 
         Ok(subscriber)
+    }
+
+    pub async fn list(&self, page: u32, page_size: u32) -> ApplicationResult<SubscriberPage> {
+        if page == 0 {
+            return Err(ApplicationError::InvalidRequest(
+                "page must be greater than zero".to_string(),
+            ));
+        }
+
+        if page_size == 0 || page_size > 100 {
+            return Err(ApplicationError::InvalidRequest(
+                "page_size must be between 1 and 100".to_string(),
+            ));
+        }
+
+        let offset = (page - 1) * page_size;
+
+        let (items, total) = self
+            .repository
+            .list(offset, page_size)
+            .await
+            .map_err(ApplicationError::Infrastructure)?;
+
+        Ok(SubscriberPage {
+            items,
+            page,
+            page_size,
+            total,
+        })
     }
 }
