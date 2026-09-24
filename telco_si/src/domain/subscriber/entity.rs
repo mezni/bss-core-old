@@ -1,6 +1,8 @@
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
+use crate::domain::events::DomainEvent;
+
 use super::{
     error::SubscriberError,
     value_objects::{AccountNumber, Money, SubscriberId, SubscriberStatus},
@@ -16,6 +18,7 @@ pub struct Subscriber {
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
     version: i64,
+    events: Vec<DomainEvent>,
 }
 
 impl Subscriber {
@@ -31,6 +34,7 @@ impl Subscriber {
             created_at: now,
             updated_at: now,
             version: 1,
+            events: Vec::new(),
         }
     }
 
@@ -39,6 +43,11 @@ impl Subscriber {
             SubscriberStatus::Active => {
                 self.status = SubscriberStatus::Suspended;
                 self.updated_at = Utc::now();
+
+                self.events.push(DomainEvent::SubscriberSuspended {
+                    subscriber_id: self.id.value(),
+                    occurred_at: self.updated_at,
+                });
 
                 Ok(())
             }
@@ -55,6 +64,11 @@ impl Subscriber {
                 self.status = SubscriberStatus::Active;
                 self.updated_at = Utc::now();
 
+                self.events.push(DomainEvent::SubscriberActivated {
+                    subscriber_id: self.id.value(),
+                    occurred_at: self.updated_at,
+                });
+
                 Ok(())
             }
 
@@ -69,6 +83,11 @@ impl Subscriber {
             SubscriberStatus::Active | SubscriberStatus::Suspended => {
                 self.status = SubscriberStatus::Terminated;
                 self.updated_at = Utc::now();
+
+                self.events.push(DomainEvent::SubscriberTerminated {
+                    subscriber_id: self.id.value(),
+                    occurred_at: self.updated_at,
+                });
 
                 Ok(())
             }
@@ -105,6 +124,14 @@ impl Subscriber {
         self.version += 1;
     }
 
+    pub fn domain_events(&self) -> &[DomainEvent] {
+        &self.events
+    }
+
+    pub fn take_domain_events(&mut self) -> Vec<DomainEvent> {
+        std::mem::take(&mut self.events)
+    }
+
     pub fn reconstitute(
         id: SubscriberId,
         account_number: AccountNumber,
@@ -124,6 +151,7 @@ impl Subscriber {
             created_at,
             updated_at,
             version,
+            events: Vec::new(),
         }
     }
 
@@ -139,6 +167,8 @@ impl Subscriber {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use crate::domain::events::DomainEvent;
 
     fn create_subscriber() -> Subscriber {
         let account_number = AccountNumber::new("ACC-10001").expect("valid account number");
@@ -243,5 +273,36 @@ mod tests {
         let result = subscriber.terminate();
 
         assert!(matches!(result, Err(SubscriberError::InvalidTermination)));
+    }
+
+    #[test]
+    fn suspending_subscriber_generates_event() {
+        let account = AccountNumber::new("ACC-10001").unwrap();
+
+        let mut subscriber = Subscriber::new(account);
+
+        subscriber.suspend().unwrap();
+
+        assert_eq!(subscriber.domain_events().len(), 1);
+
+        assert!(matches!(
+            subscriber.domain_events()[0],
+            DomainEvent::SubscriberSuspended { .. }
+        ));
+    }
+
+    #[test]
+    fn invalid_suspend_does_not_generate_event() {
+        let account = AccountNumber::new("ACC-10002").unwrap();
+
+        let mut subscriber = Subscriber::new(account);
+
+        subscriber.suspend().unwrap();
+
+        let result = subscriber.suspend();
+
+        assert!(result.is_err());
+
+        assert_eq!(subscriber.domain_events().len(), 1);
     }
 }
