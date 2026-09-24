@@ -1,10 +1,13 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use sqlx::SqlitePool;
+use sqlx::{QueryBuilder, SqlitePool};
 
 use crate::{
-    application::subscriber::{query::SubscriberListItem, repository::SubscriberRepository},
+    application::subscriber::{
+        query::{SubscriberListItem, SubscriberListQuery},
+        repository::SubscriberRepository,
+    },
     domain::subscriber::{AccountNumber, Money, Subscriber, SubscriberId, SubscriberStatus},
 };
 
@@ -171,8 +174,10 @@ impl SubscriberRepository for SqliteSubscriberRepository {
         Ok(())
     }
 
-    async fn list(&self, offset: u32, limit: u32) -> Result<(Vec<SubscriberListItem>, u64)> {
-        let rows = sqlx::query_as::<_, SubscriberListRow>(
+    async fn list(&self, query: &SubscriberListQuery) -> Result<(Vec<SubscriberListItem>, u64)> {
+        let offset = (query.page - 1) * query.page_size;
+
+        let mut builder = QueryBuilder::<sqlx::Sqlite>::new(
             r#"
             SELECT
                 id,
@@ -180,17 +185,49 @@ impl SubscriberRepository for SqliteSubscriberRepository {
                 status,
                 balance_cents
             FROM subscribers
-            ORDER BY created_at DESC
-            LIMIT ? OFFSET ?
+            WHERE 1 = 1
             "#,
-        )
-        .bind(limit)
-        .bind(offset)
-        .fetch_all(&self.pool)
-        .await
-        .context("failed to list subscribers")?;
+        );
 
-        let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM subscribers")
+        if let Some(status) = query.status {
+            builder.push(" AND status = ");
+            builder.push_bind(status_to_string(status));
+        }
+
+        if let Some(account_number) = query.account_number.as_deref() {
+            builder.push(" AND account_number = ");
+            builder.push_bind(account_number);
+        }
+
+        builder.push(" ORDER BY created_at DESC ");
+
+        builder.push(" LIMIT ");
+        builder.push_bind(query.page_size);
+
+        builder.push(" OFFSET ");
+        builder.push_bind(offset);
+
+        let rows: Vec<SubscriberListRow> = builder
+            .build_query_as()
+            .fetch_all(&self.pool)
+            .await
+            .context("failed to list subscribers")?;
+
+        let mut count_builder =
+            QueryBuilder::<sqlx::Sqlite>::new("SELECT COUNT(*) FROM subscribers WHERE 1 = 1");
+
+        if let Some(status) = query.status {
+            count_builder.push(" AND status = ");
+            count_builder.push_bind(status_to_string(status));
+        }
+
+        if let Some(account_number) = query.account_number.as_deref() {
+            count_builder.push(" AND account_number = ");
+            count_builder.push_bind(account_number);
+        }
+
+        let total: (i64,) = count_builder
+            .build_query_as()
             .fetch_one(&self.pool)
             .await
             .context("failed to count subscribers")?;
@@ -198,8 +235,7 @@ impl SubscriberRepository for SqliteSubscriberRepository {
         let items = rows
             .into_iter()
             .map(|row| SubscriberListItem {
-                id: uuid::Uuid::parse_str(&row.id)
-                    .expect("database contains invalid subscriber UUID"),
+                id: uuid::Uuid::parse_str(&row.id).expect("invalid subscriber UUID"),
                 account_number: row.account_number,
                 status: row.status,
                 balance_cents: row.balance_cents,

@@ -1,3 +1,13 @@
+use crate::domain::subscriber::SubscriberStatus;
+
+#[derive(Debug, Clone)]
+pub struct SubscriberListQuery {
+    pub page: u32,
+    pub page_size: u32,
+    pub status: Option<SubscriberStatus>,
+    pub account_number: Option<String>,
+}
+
 #[derive(Debug, Clone)]
 pub struct SubscriberListItem {
     pub id: uuid::Uuid,

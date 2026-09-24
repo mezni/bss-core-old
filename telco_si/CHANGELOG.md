@@ -215,6 +215,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `subscriber_pagination_returns_correct_page` — service-level pagination
     (3 rows, page 2 of size 2 yields 1 item, total 3).
 
+### Changed
+
+- `GET /subscribers` now supports `status` and `account_number` query
+  filters (Phase 2, Subscriber context, part 4 / query object):
+  - `src/application/subscriber/query.rs` — new `SubscriberListQuery` with
+    `page`, `page_size`, `status: Option<SubscriberStatus>`, and
+    `account_number: Option<String>`. The status filter is typed as the
+    domain enum (`SubscriberStatus`), so arbitrary strings such as
+    `"banana"` can never reach the application layer.
+  - `src/application/subscriber/repository.rs` — `SubscriberRepository::list()`
+    now takes `&SubscriberListQuery` instead of raw `offset`/`limit` arguments.
+  - `src/application/subscriber/service.rs` — `SubscriberService::list()`
+    accepts a `SubscriberListQuery` (pagination guards unchanged).
+  - `src/interfaces/http/dto.rs` — the HTTP query DTO was renamed to
+    `SubscriberListRequest` (to avoid colliding with the application query)
+    and now deserializes `status` and `account_number`.
+  - `src/interfaces/http/subscriber.rs` — `list_subscribers` converts the HTTP
+    DTO into the application `SubscriberListQuery`; a new `parse_status()`
+    helper maps query-string status text to `SubscriberStatus` and returns 400
+    on an invalid value instead of silently accepting it.
+  - `src/infrastructure/persistence/subscriber_repository.rs` — `list()`
+    builds the page and `COUNT(*)` queries with `sqlx::QueryBuilder`,
+    appending bound (parameterized) `status`/`account_number` filters — the
+    SQL structure is dynamic but values are always bound, so there is no
+    SQL-injection surface. Existing indexes (`idx_subscribers_status`, the
+    UNIQUE constraint on `account_number`) already cover the new filters.
+- Integration tests (`tests/subscriber_integration.rs`):
+  - `list_subscribers_can_filter_by_status` — `?status=suspended` returns
+    only the suspended subscriber.
+  - `list_subscribers_can_filter_by_account_number` — exact-match filter
+    returns the matching row.
+  - `list_subscribers_rejects_invalid_status` — `?status=unknown` returns 400.
+  - `subscriber_pagination_returns_correct_page` — updated to build a
+    `SubscriberListQuery`.
+
 ## [0.0.2] - 2026-09-19
 
 ### Added

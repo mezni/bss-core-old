@@ -2,10 +2,16 @@ use actix_web::{HttpResponse, Result, web};
 use uuid::Uuid;
 use validator::Validate;
 
-use crate::application::{AppState, error::ApplicationError};
+use crate::{
+    application::{
+        AppState, error::ApplicationError,
+        subscriber::SubscriberListQuery as AppSubscriberListQuery,
+    },
+    domain::subscriber::SubscriberStatus,
+};
 
 use super::dto::{
-    CreateSubscriberRequest, SubscriberListQuery, SubscriberListResponse, SubscriberResponse,
+    CreateSubscriberRequest, SubscriberListRequest, SubscriberListResponse, SubscriberResponse,
 };
 
 pub async fn create_subscriber(
@@ -77,12 +83,18 @@ pub async fn terminate_subscriber(
 
 pub async fn list_subscribers(
     state: web::Data<AppState>,
-    query: web::Query<SubscriberListQuery>,
+    query: web::Query<SubscriberListRequest>,
 ) -> Result<HttpResponse, ApplicationError> {
-    let page = query.page.unwrap_or(1);
-    let page_size = query.page_size.unwrap_or(20);
+    let status = parse_status(query.status.as_deref())?;
 
-    let result = state.subscriber_service.list(page, page_size).await?;
+    let application_query = AppSubscriberListQuery {
+        page: query.page.unwrap_or(1),
+        page_size: query.page_size.unwrap_or(20),
+        status,
+        account_number: query.account_number.clone(),
+    };
+
+    let result = state.subscriber_service.list(application_query).await?;
 
     let response = SubscriberListResponse {
         items: result.items.into_iter().map(Into::into).collect(),
@@ -92,6 +104,22 @@ pub async fn list_subscribers(
     };
 
     Ok(HttpResponse::Ok().json(response))
+}
+
+fn parse_status(value: Option<&str>) -> Result<Option<SubscriberStatus>, ApplicationError> {
+    match value {
+        None => Ok(None),
+
+        Some("active") => Ok(Some(SubscriberStatus::Active)),
+
+        Some("suspended") => Ok(Some(SubscriberStatus::Suspended)),
+
+        Some("terminated") => Ok(Some(SubscriberStatus::Terminated)),
+
+        Some(value) => Err(ApplicationError::InvalidRequest(format!(
+            "invalid subscriber status: {value}",
+        ))),
+    }
 }
 
 pub fn configure(cfg: &mut web::ServiceConfig) {

@@ -62,7 +62,9 @@ impl From<SubscriberListItem> for SubscriberListItemResponse {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct SubscriberListQuery {
+pub struct SubscriberListRequest {
     pub page: Option<u32>,
     pub page_size: Option<u32>,
+    pub status: Option<String>,
+    pub account_number: Option<String>,
 }

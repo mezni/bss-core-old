@@ -1,7 +1,7 @@
 use anyhow::Result;
 
 use crate::{
-    application::subscriber::query::SubscriberListItem,
+    application::subscriber::query::{SubscriberListItem, SubscriberListQuery},
     domain::subscriber::{Subscriber, SubscriberId},
 };
 
@@ -15,5 +15,5 @@ pub trait SubscriberRepository: Send + Sync {
 
     async fn update(&self, subscriber: &Subscriber) -> Result<()>;
 
-    async fn list(&self, offset: u32, limit: u32) -> Result<(Vec<SubscriberListItem>, u64)>;
+    async fn list(&self, query: &SubscriberListQuery) -> Result<(Vec<SubscriberListItem>, u64)>;
 }
