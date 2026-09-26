@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.dist/
+venv/
+.env/
+.env.local
+.env.prod/
+.env.test/
+.senv/
+env/
+.coverage
+*.cover
+.hypothesis/
+.tox/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Environments
+.python-version
+
+# Protection
+.DS_Store
+Thumbs.db
+
+# Project specific
+data/

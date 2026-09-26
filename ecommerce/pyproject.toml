@@ -1,0 +1,47 @@
+[build-system]
+requires = ["uv_build>=0.12.15,<0.13.0"]
+build-backend = "uv_build"
+
+[project]
+name = "ecommerce"
+version = "0.1.0"
+requires-python = ">=3.12"
+
+[project.tool.ruff]
+extend-select = []
+print.line-length-limit = 120
+
+[project.tool.mypy]
+strict = true
+disallow_untyped_definitions = true
+disallow_incomplete_defs = true
+
+[project.tool.pytest.ini_options]
+testpaths = ["tests"]
+python_paths = ["src/"]
+addopts = "--tb=short -q"
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "api: API tests",
+]
+
+[dependency-group.runtime]
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "pydantic",
+    "pydantic-settings",
+    "sqlalchemy",
+    "alembic",
+    "httpx",
+    "faker",
+]
+
+[dependency-group.development]
+dependencies = [
+    "pytest",
+    "ruff",
+    "mypy",
+    "pytest-cov",
+]
