@@ -7,22 +7,25 @@ E-Commerce Server governance baseline. v1.1.0 materially expands the Spec Kit
 development-process guidance by mandating that all Speckit-generated artifacts
 live under `specs/` and by enumerating the feature roadmap layout.
 
-Modified principles:
-  - [PRINCIPLE_1_NAME]   (template placeholder) -> I. Domain Independence
-  - [PRINCIPLE_2_NAME]   (template placeholder) -> II. Determinism and Reproducibility
-  - [PRINCIPLE_3_NAME]   (template placeholder) -> III. Explicit Business Rules
-  - [PRINCIPLE_4_NAME]   (template placeholder) -> IV. Testability and Isolation
-  - [PRINCIPLE_5_NAME]   (template placeholder) -> V. Simple Local Development
+Modified principles (all five were unresolved template slots, e.g. the
+`PRINCIPLE_1_NAME` / `PRINCIPLE_1_DESCRIPTION` pair):
+  - slot 1 -> I. Domain Independence
+  - slot 2 -> II. Determinism and Reproducibility
+  - slot 3 -> III. Explicit Business Rules
+  - slot 4 -> IV. Testability and Isolation
+  - slot 5 -> V. Simple Local Development
 
 Added sections:
   - Speckit Development Process (new; governs `specs/` layout and lifecycle)
-  - Technology Stack and API Design (was [SECTION_2_NAME]/[SECTION_2_CONTENT])
-  - Development Workflow (was [SECTION_3_NAME]/[SECTION_3_CONTENT])
+  - Technology Stack and API Design (was the SECTION_2_NAME/SECTION_2_CONTENT slot)
+  - Development Workflow (was the SECTION_3_NAME/SECTION_3_CONTENT slot)
   - Project Documentation Layout (new; governs README/CHANGELOG/docs/)
+  - Database and Data Management (new; governs Alembic-only schema management)
+  - Security and Observability (new; governs error envelope, logging, auth, config)
 
 Removed sections:
-  - [SECTION_2_NAME], [SECTION_3_NAME], [GOVERNANCE_RULES] placeholders resolved
-    to concrete, non-placeholder sections.
+  - The SECTION_2_NAME, SECTION_3_NAME and GOVERNANCE_RULES template slots were
+    resolved to concrete, non-placeholder sections. No governance area was dropped.
 
 Deferred items / follow-up TODOs:
   - None. RATIFICATION_DATE set to 2026-09-25 (this is the first substantive
