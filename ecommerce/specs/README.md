@@ -13,33 +13,38 @@ Speckit tooling from `SPECS_DIR` (repository `specs/`) and/or
 
 ## Roadmap
 
-| # | Feature | Purpose |
-|---|---------|---------|
-| 001 | `001-foundation` | Project scaffolding, config, logging, error envelope, health endpoint, Alembic baseline |
-| 002 | `002-product-catalog` | Products, categories, listing/filtering/pagination, CRUD |
-| 003 | `003-customers` | Customer registration, profile, status lifecycle |
-| 004 | `004-cart` | Cart lifecycle, cart items, quantity rules, pricing |
-| 005 | `005-orders` | Order lifecycle, order items, state transitions, checkout |
-| 006 | `006-inventory` | Stock levels, reservation, release, conflict detection |
-| 007 | `007-payments` | Payment authorization/capture, fake payment provider, payment states |
-| 008 | `008-fake-data-generator` | **High priority.** Deterministic fake-data generator + CLI |
-| 009 | `009-failure-simulation` | Deterministic + randomized failure injection |
-| 010 | `010-authentication` | Fake auth (customer/admin/service roles) and authorization rules |
-| 011 | `011-observability` | Request IDs, structured logging, domain events, metrics |
+Feature directories are created by `/speckit.specify` as the work is specified, and
+MUST NOT be pre-scaffolded as empty placeholders. Only directories listed as *existing*
+below are present in the repository today; the remainder of the roadmap has no
+directory yet and will take the next free number (`002`, `003`, …) when it is
+specified.
 
-> `008-fake-data-generator` is a first-class, high-priority feature. The
-> fake-data generator is a project capability in its own right — not an
-> afterthought of the other features — and must be executable independently of
-> the FastAPI server.
+| # | Feature | Purpose | Directory |
+|---|---------|---------|-----------|
+| 001 | `001-project-foundation` | `docs/plan.md` Phase 0: installable, configurable, verifiable, testable project foundation | **exists** |
+| 002 | `002-product-catalog` | Products, categories, listing/filtering/pagination, CRUD | not yet specified |
+| 003 | `003-customers` | Customer registration, profile, status lifecycle | not yet specified |
+| 004 | `004-cart` | Cart lifecycle, cart items, quantity rules, pricing | not yet specified |
+| 005 | `005-orders` | Order lifecycle, order items, state transitions, checkout | not yet specified |
+| 006 | `006-inventory` | Stock levels, reservation, release, conflict detection | not yet specified |
+| 007 | `007-payments` | Payment authorization/capture, fake payment provider, payment states | not yet specified |
+| 008 | `008-fake-data-generator` | **High priority.** Deterministic fake-data generator + CLI | not yet specified |
+| 009 | `009-failure-simulation` | Deterministic + randomized failure injection | not yet specified |
+| 010 | `010-authentication` | Fake auth (customer/admin/service roles) and authorization rules | not yet specified |
+| 011 | `011-observability` | Request IDs, structured logging, domain events, metrics | not yet specified |
 
-### Decisions deferred into a feature spec
+> The fake-data generator is a project capability in its own right — not an
+> afterthought of the other features — and must be executable independently of the
+> FastAPI server.
+
+### Decisions deferred into a future feature spec
 
 Architecture divergence A6 was deliberately deferred (see `docs/CHANGELOG.md` and
 `docs/architecture.md` §60.1). The author of the affected spec MUST resolve it.
 
-| Spec | Deferred decision | Interim contract |
-|------|-------------------|------------------|
-| `005-orders` | **A6 — checkout route shape.** `POST /api/v1/checkout` with `cart_id` in the body, vs. `POST /api/v1/carts/{cart_id}/checkout`. | `POST /api/v1/checkout` remains published in `docs/API.md` §21, `README.md`, and `docs/failure-simulation.md` §46. If the spec diverges, all affected documents MUST be updated in the same commit. |
+| Target feature | Deferred decision | Interim contract |
+|---------------|-------------------|------------------|
+| Orders (roadmap `005`) | **A6 — checkout route shape.** `POST /api/v1/checkout` with `cart_id` in the body, vs. `POST /api/v1/carts/{cart_id}/checkout`. | `POST /api/v1/checkout` remains published in `docs/API.md` §21, `README.md`, and `docs/failure-simulation.md` §46. If the spec diverges, all affected documents MUST be updated in the same commit. |
 
 Money representation is **not** deferred: integer minor units are settled (divergence A5, resolved —
 `docs/architecture.md` §20.1) and binding on every spec.
