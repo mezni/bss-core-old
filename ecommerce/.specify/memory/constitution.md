@@ -150,8 +150,12 @@ Each dependency MUST have a clear technical purpose.
 API design requirements:
 
 - All public routes MUST be versioned under `/api/v1/`.
-- The API MUST follow HTTP semantics and use appropriate status codes
-  (200, 201, 204, 400, 401, 403, 404, 409, 422, 500).
+- The API MUST follow HTTP semantics and use appropriate status codes. The core
+  set is 200, 201, 204, 400, 401, 403, 404, 409, 422, and 500; this list is
+  illustrative and not exhaustive. `docs/API.md` §13 is the authoritative status
+  set and additionally uses 402 (payment declined), 415, 429, 502, 503, and 504
+  (fake-provider failure), each of which is the semantically correct code for its
+  condition.
 - API request/response models MUST use explicit Pydantic schemas; database
   models MUST NOT automatically become public API schemas.
 - Pydantic v2 MUST perform validation at API boundaries, but business rules
@@ -273,10 +277,17 @@ credentials, temporary files, and build artifacts MUST NOT be committed.
 {
   "error": {
     "code": "INSUFFICIENT_INVENTORY",
-    "message": "Insufficient inventory for product"
+    "message": "Insufficient inventory for product",
+    "details": [],
+    "request_id": "7d3f4a2e-..."
   }
 }
 ```
+
+The error envelope has four fields. `details` is always an array of field issues
+(empty when there are none), never an object, and `request_id` is always present
+so a client can quote it in a bug report. `docs/API.md` §12 is the authoritative
+envelope and error-code list.
 
 - Configuration MUST be externalized via environment variables (e.g.
   `DATABASE_URL`, `APP_ENV`, `LOG_LEVEL`, `FAKE_FAILURE_RATE`, `FAKE_LATENCY_MS`,
@@ -296,6 +307,23 @@ Amendment procedure:
    relevant specifications and documentation.
 3. The constitution MUST evolve when project requirements or architectural
    constraints genuinely change.
+
+### Amendment log
+
+**1.1.1** (PATCH — two clarifications, no principle added or removed)
+
+- *Status codes.* The core status-code list read as exhaustive, so the six codes
+  `docs/API.md` §13 depends on (402, 415, 429, 502, 503, 504) looked like
+  violations. Reason: the clause mandates "appropriate status codes"; 402 is the
+  correct code for a declined payment and 502/504 the correct codes for the fake
+  provider. Affected areas: `docs/API.md` §13, `docs/failure-simulation.md`.
+  No behavior change — the clause is now explicitly illustrative, and `API.md`
+  §13 is named as authoritative.
+- *Error envelope.* The example omitted `request_id` and `details`, both of which
+  `docs/API.md` §12 makes mandatory. Reason: the example contradicted the
+  published contract, and divergence E17 already settles `details` as an array.
+  Affected areas: `docs/API.md` §12, `docs/testing.md`, `CHANGELOG.md` (E17).
+  No behavior change — the example now matches the contract it illustrates.
 
 Versioning policy (semantic versioning of the constitution itself):
 
@@ -319,4 +347,4 @@ significant decision SHOULD be able to answer "does this make the system more
 realistic, deterministic, testable, maintainable, or useful?" If not, the added
 complexity SHOULD be questioned before it is introduced.
 
-**Version**: 1.1.0 | **Ratified**: 2026-09-25 | **Last Amended**: 2026-09-25
+**Version**: 1.1.1 | **Ratified**: 2026-09-25 | **Last Amended**: 2026-09-25

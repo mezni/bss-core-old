@@ -152,11 +152,18 @@ uv run python -m ecommerce.seed --reset
 |---|---|---|
 | `--seed` | `RANDOM_SEED` (else `42`) | Same seed → same data |
 | `--profile` | *(none)* | `test`, `development`, `large` |
-| `--customers` | profile | |
-| `--products` | profile | |
-| `--categories` | profile | |
-| `--orders` | profile | |
+| `--categories` | profile | Number of categories |
+| `--products` | profile | Number of products |
+| `--customers` | profile | Number of customers |
+| `--carts` | derived | Number of carts; omitted derives a realistic subset of customers |
+| `--orders` | profile | Number of orders |
 | `--reset` | off | Clear generated rows first |
+| `--validate` / `--no-validate` | on | Post-generation validation |
+| `--quiet` | off | Suppress progress output |
+| `--output` | `text` | `text` or `json` for the summary |
+
+Full option reference, including the precedence rules between flags, `RANDOM_SEED`, and
+`.env`: [`docs/generator.md` §44](docs/generator.md).
 
 | Profile | Categories | Products | Customers | Orders |
 |---|---|---|---|---|
@@ -264,7 +271,8 @@ curl -s -X POST $BASE/api/v1/checkout \
   "error": {
     "code": "PAYMENT_DECLINED",
     "message": "Payment was declined by the issuer",
-    "request_id": "01J8Z9..."
+    "details": [],
+    "request_id": "7d3f4a2e-..."
   }
 }
 ```
@@ -292,9 +300,18 @@ Externalized via environment variables. Documented in [`.env.example`](.env.exam
 | `FAKE_FAILURE_ENABLED` | `false` | Master switch for failure simulation |
 | `FAKE_FAILURE_RATE` | `0.0` | Randomized injection rate (`0.0` = off) |
 | `FAKE_LATENCY_MS` | `0` | Artificial latency per request |
+| `AUTH_ENABLED` | `true` | Enforce authentication and authorization |
 
 Failure simulation is **off by default**. With it enabled and `FAKE_FAILURE_RATE=0.0`, only
 deterministic `X-Fake-Failure` requests fail — so a functional test never loses a coin flip.
+
+> ### The auth boundary is fake
+>
+> `AUTH_ENABLED=true` is the default everywhere, including development, and every route — including
+> the administrative ones in `API.md` §44 — enforces it. The enforcement is real code on a real
+> boundary, but the credentials are static fixtures in a local fake server, not a security control.
+> Never point this at a network it does not own. Set `AUTH_ENABLED=false` only for tests that
+> deliberately exercise the unauthenticated path.
 
 ---
 

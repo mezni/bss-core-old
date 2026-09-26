@@ -32,6 +32,18 @@ Speckit tooling from `SPECS_DIR` (repository `specs/`) and/or
 > afterthought of the other features — and must be executable independently of
 > the FastAPI server.
 
+### Decisions deferred into a feature spec
+
+Architecture divergence A6 was deliberately deferred (see `docs/CHANGELOG.md` and
+`docs/architecture.md` §60.1). The author of the affected spec MUST resolve it.
+
+| Spec | Deferred decision | Interim contract |
+|------|-------------------|------------------|
+| `005-orders` | **A6 — checkout route shape.** `POST /api/v1/checkout` with `cart_id` in the body, vs. `POST /api/v1/carts/{cart_id}/checkout`. | `POST /api/v1/checkout` remains published in `docs/API.md` §21, `README.md`, and `docs/failure-simulation.md` §46. If the spec diverges, all affected documents MUST be updated in the same commit. |
+
+Money representation is **not** deferred: integer minor units are settled (divergence A5, resolved —
+`docs/architecture.md` §20.1) and binding on every spec.
+
 ## Contents of a feature directory
 
 Artifacts are produced by the Spec Kit commands, not authored by hand:

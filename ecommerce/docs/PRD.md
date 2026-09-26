@@ -1,7 +1,7 @@
 # Product Requirements Document — Fake E-Commerce Server
 
 > **Status:** Draft
-> **Authority:** `.specify/memory/constitution.md` v1.1.0
+> **Authority:** `.specify/memory/constitution.md` v1.1.1
 > **Scope:** What the system must do, and why. Implementation detail is out of scope here — see
 > `docs/architecture.md`, `docs/API.md`, `docs/database.md`.
 
@@ -268,7 +268,11 @@ The system remains a modular monolith.
 
 ## 8. Open Questions
 
-* Spec feature decomposition — see conflict **C1** in `docs/plan.md` §30.
-* Whether `checkout` becomes its own feature or stays folded into orders.
-* Whether a readiness endpoint is required.
-* Whether basic metrics are justified (const. *Observability* says only "if justified").
+* Whether a readiness endpoint is required (constitution says it *may* be added).
+* Whether basic metrics are justified (constitution says only "if justified").
+* Whether `checkout` will eventually warrant its own feature spec, or stays folded into
+  `005-orders`. Currently folded in — see `docs/plan.md` §30.
+
+Resolved:
+
+* Spec feature decomposition — **11 features, generator at `008`**. See `docs/plan.md` §30.
