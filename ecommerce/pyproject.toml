@@ -6,27 +6,6 @@ build-backend = "uv_build"
 name = "ecommerce"
 version = "0.1.0"
 requires-python = ">=3.12"
-
-[project.tool.ruff]
-extend-select = []
-print.line-length-limit = 120
-
-[project.tool.mypy]
-strict = true
-disallow_untyped_definitions = true
-disallow_incomplete_defs = true
-
-[project.tool.pytest.ini_options]
-testpaths = ["tests"]
-python_paths = ["src/"]
-addopts = "--tb=short -q"
-markers = [
-    "unit: Unit tests",
-    "integration: Integration tests",
-    "api: API tests",
-]
-
-[dependency-group.runtime]
 dependencies = [
     "fastapi",
     "uvicorn",
@@ -38,8 +17,31 @@ dependencies = [
     "faker",
 ]
 
-[dependency-group.development]
-dependencies = [
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+# Documentation code blocks are illustrative, not build inputs. The formatter must not
+# reflow them: a joined 120-character snippet is harder to read, and docs are governed
+# by the documentation layout rules rather than by the Python formatter.
+extend-exclude = ["*.md"]
+
+[tool.mypy]
+strict = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "--tb=short -q"
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "api: API tests",
+]
+
+[dependency-groups]
+dev = [
     "pytest",
     "ruff",
     "mypy",

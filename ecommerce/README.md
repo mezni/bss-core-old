@@ -7,9 +7,11 @@ real payments, no real credentials.
 Built for local development, API integration testing, client development, agent/tool-calling
 experiments, failure and resilience testing, and learning modern Python backend architecture.
 
-> **Status:** Early — documentation and specification complete, implementation not yet started.
+> **Status:** Complete — FastAPI foundation implemented, `make check` passes, 55/55 tasks recorded.
 > Feature roadmap: [`specs/README.md`](specs/README.md).
 > Engineering rules: [`.specify/memory/constitution.md`](.specify/memory/constitution.md).
+
+**This session** (`002-fastapi-foundation`): `make install && make run` verified, liveness `/health`, description switches (`API_DOCS_ENABLED`, `API_REDOC_ENABLED`), error envelope, version consistency, `make check` (ruff/format/mypy/pytest). All 55 tasks recorded in `tasks.md`.
 
 ---
 

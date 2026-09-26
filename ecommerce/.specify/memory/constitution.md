@@ -200,17 +200,17 @@ scattered under `docs/`, the repository root, or elsewhere.
 
 ```text
 specs/
-├── 001-foundation/
-├── 002-product-catalog/
-├── 003-customers/
-├── 004-cart/
-├── 005-orders/
-├── 006-inventory/
-├── 007-payments/
-├── 008-fake-data-generator/
-├── 009-failure-simulation/
-├── 010-authentication/
-└── 011-observability/
+├── 001-project-foundation/
+├── 003-product-catalog/
+├── 004-customers/
+├── 005-cart/
+├── 006-orders/
+├── 007-inventory/
+├── 008-payments/
+├── 009-fake-data-generator/
+├── 010-failure-simulation/
+├── 011-authentication/
+└── 012-observability/
 ```
 
 Rules:

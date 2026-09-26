@@ -4,8 +4,10 @@ __pycache__/
 *.pyo
 *.pyd
 *.egg-info/
-.dist/
+build/
+dist/
 venv/
+.venv/
 .env/
 .env.local
 .env.prod/
@@ -13,6 +15,9 @@ venv/
 .senv/
 env/
 .coverage
+.coverage.*
+coverage.xml
+htmlcov/
 *.cover
 .hypothesis/
 .tox/
@@ -20,12 +25,14 @@ env/
 .ruff_cache/
 .pytest_cache/
 
-# Environments
-.python-version
-
 # Protection
 .DS_Store
 Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
 
 # Project specific
 data/
