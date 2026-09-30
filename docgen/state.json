@@ -1,0 +1,87 @@
+{
+  "companies": [
+    {
+      "id": "calder",
+      "name": "Calder Hospitality Resorts",
+      "industry": "Hospitality",
+      "departments": [
+        {
+          "id": "operations",
+          "name": "Operations",
+          "documents": [
+            {
+              "id": "guest_feedback_followup.txt",
+              "title": "Guest Feedback Follow-Up",
+              "format": "text",
+              "type": "TEXT",
+              "version": "1.0",
+              "audience": "New joiners during onboarding",
+              "privacy": "Confidential",
+              "pages": 6,
+              "file": "data/calder/operations/guest_feedback_followup.txt",
+              "created_at": "2026-09-30",
+              "updated_at": "2026-09-30"
+            },
+            {
+              "id": "maintenance_work_orders.txt",
+              "title": "Maintenance Work Orders",
+              "format": "text",
+              "type": "TEXT",
+              "version": "1.4",
+              "audience": "Managers and team leads",
+              "privacy": "Confidential",
+              "pages": 5,
+              "file": "data/calder/operations/maintenance_work_orders.txt",
+              "created_at": "2026-09-30",
+              "updated_at": "2026-09-30"
+            },
+            {
+              "id": "allergen_declaration.txt",
+              "title": "Allergen Declaration",
+              "format": "text",
+              "type": "TEXT",
+              "version": "1.3",
+              "audience": "Contractors and third-party vendors",
+              "privacy": "Internal",
+              "pages": 6,
+              "file": "data/calder/operations/allergen_declaration.txt",
+              "created_at": "2026-09-30",
+              "updated_at": "2026-09-30"
+            },
+            {
+              "id": "room_allocation_rules.md",
+              "title": "Room Allocation Rules",
+              "format": "markdown",
+              "type": "MARKDOWN",
+              "version": "1.3",
+              "audience": "Contractors and third-party vendors",
+              "privacy": "Public",
+              "pages": 10,
+              "file": "data/calder/operations/room_allocation_rules.md",
+              "created_at": "2026-09-30",
+              "updated_at": "2026-09-30"
+            },
+            {
+              "id": "housekeeping_schedules.txt",
+              "title": "Housekeeping Schedules",
+              "format": "text",
+              "type": "TEXT",
+              "version": "2.0",
+              "audience": "Managers and team leads",
+              "privacy": "Confidential",
+              "pages": 7,
+              "file": "data/calder/operations/housekeeping_schedules.txt",
+              "created_at": "2026-09-30",
+              "updated_at": "2026-09-30"
+            }
+          ]
+        },
+        {
+          "id": "billing",
+          "name": "Billing",
+          "documents": []
+        }
+      ]
+    }
+  ]
+}
