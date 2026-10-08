@@ -1,6 +1,72 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# Rust
-**/target/
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Ruff
+.ruff_cache/
 
 # IDEs
 .idea/
@@ -10,23 +76,6 @@
 .DS_Store
 Thumbs.db
 Desktop.ini
-
-# Environment / secrets
-**/.env
-**/.env.*
-!**/.env.example
-.env
-.env.*
-!.env.example
-
-# SQLite databases
-*.db
-*.sqlite
-*.sqlite3
-*.sqlite-wal
-*.sqlite-shm
-*.db-wal
-*.db-shm
 
 # Logs
 *.log
@@ -38,8 +87,21 @@ temp/
 **/tmp/
 **/temp/
 
-# Coverage & HTML reports
-coverage/
-tarpaulin-report.html
-**/coverage/
-**/*.html
+# Data files
+*.csv
+*.tsv
+*.json
+*.parquet
+*.h5
+*.hdf5
+*.pkl
+*.joblib
+*.npy
+*.npz
+**/data/
+**/datasets/
+**/models/
+**/checkpoints/
+
+# Keep example env files
+!.env.example
