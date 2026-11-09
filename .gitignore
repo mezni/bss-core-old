@@ -33,3 +33,7 @@ Thumbs.db
 *.swp
 .vscode/
 .idea/
+dist/
+build/
+.ruffile
+*.log
