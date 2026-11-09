@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.tox/
+.coverage
+htmlcov/
+.mypy_cache/
+.dmypycache/
+*.egg-info/
+/ venv/
+/ .venv/
+
+# FastAPI / Starlette
+.app/
+
+# SQLAlchemy
+db/
+
+# uv project
+.packages/
+
+# Environment variables
+.env*
+secret*
+
+# Universal
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/
