@@ -3,44 +3,17 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.pytest_cache/
-.tox/
-.coverage
-htmlcov/
-.mypy_cache/
-.dmypycache/
-*.egg-info/
-/ venv/
-/ .venv/
-
-# FastAPI / Starlette
-.app/
-
-# SQLAlchemy
-db/
-
-# uv project
-.packages/
-
-# Environment variables
+venv/
 .env*
-secret*
-
-# Universal
-.DS_Store
-Thumbs.db
-*.tmp
-*.swp
+# FastAPI / uvicorn / Starlette
+dist/
+build/
+*.egg-info/
+# IDE
 .vscode/
 .idea/
-dist/
-build/
-.ruffile
+# OS
+.DS_Store
+Thumbs.db
+# Logs
 *.log
-node_modules/
-dist/
-build/
-*.log
-.env*
-__pycache__/
-*.pyc

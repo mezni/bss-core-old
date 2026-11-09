@@ -1,5 +1,5 @@
 # Specification Analysis Report
-**Feature**: Project Foundation (S00)
+**Feature**: Project Foundation (S01 - from sprint-planning.md)
 **Artifacts Analyzed**: spec.md, plan.md, tasks.md
 **Analysis Date**: 2026-11-09
 **Constraint**: Read-only analysis; no file modifications
@@ -8,7 +8,7 @@
 
 | ID | Category | Severity | Location(s) | Summary | Recommendation |
 |----|----------|----------|-------------|---------|----------------|
-| A1 | Duplication | N/A | N/A | No significant near-duplicate requirements detected. FR-005 (database connection/session) and FR-006 (database migration infrastructure) are complementary: one concerns runtime connectivity, the other schema versioning. FR-003 (backend bootstrap) and FR-004 (frontend bootstrap) are differentiated by backend vs frontend scope. | No action required; phrasing is distinct enough. |
+| A1 | Duplication | N/A | N/A | No significant near-duplicate requirements detected. FR-005 (database connection/session management) and FR-006 (database migration infrastructure) are complementary: one concerns runtime connectivity, the other schema versioning. FR-003 (backend bootstrap) and FR-004 (frontend bootstrap) are differentiated by backend vs frontend scope. | No action required; phrasing is distinct enough. |
 | A2 | Duplication | N/A | N/A | No task duplication detected. T012 (backend FastAPI app) and T013 (frontend Streamlit app) serve distinct scopes per user stories. T022 (performance optimization) and T024 (security hardening) address different quality attributes. | No action required. |
 | B1 | Ambiguity | N/A | N/A | No vague adjectives (fast, scalable, secure, intuitive, robust) lacking measurable criteria found in specification. All success criteria (SC-001 through SC-009) include specific timing or quantitative thresholds. No unresolved placeholders (TODO, TKTK, ???, `<placeholder>`) detected in any artifact. | No action required. |
 | B2 | Ambiguity | N/A | N/A | All user stories (US1, US2) have defined independent tests and acceptance scenarios. No story is missing its alignment criteria. | No action required. |

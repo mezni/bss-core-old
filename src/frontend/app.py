@@ -17,7 +17,7 @@ st.title("📦 BSS Core - Business Management System")
 st.markdown("### Welcome to the BSS Core platform")
 
 st.sidebar.header("Navigation")
-st.sidebar.select_page(["Dashboard", "Modules", "Settings"])
+st.sidebar.radio("Navigation", ["Dashboard", "Modules", "Settings"])
 
 st.header("System Status")
 st.success("✅ Backend connection operational")

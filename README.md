@@ -1,43 +1,42 @@
-# BSS Core — Project Foundation
+# BSS Core — S01 Identity & Access
 
 ## Overview
 
-**BSS Core** is a modular business management system designed to manage customer relationships, products and services, orders, shipments, billing, users, and supporting business operations.
+**BSS Core** is a modular business management system for authenticated access control, role-based permissions, and module-based authorization. The system implements **S01 Identity & Access** featuring:
 
-The system follows a **modular monolith architecture** with **Domain-Driven Design (DDD)** and **Clean Architecture** principles, maintaining a clear separation between:
+- **JWT authentication** with credential-based access for developers and end customers
+- **Role-Based Access Control (RBAC)** with least-privilege principle per constitution Section 9.4
+- **Argon2id password hashing** per constitution Section 9.2
+- **Session management** with timeout and renewal mechanisms
+- **Audit logging** of all authentication events
+- **Two-application architecture**: backend API (FastAPI) + frontend (Streamlit) with strict separation per constitution Section 3
 
-- **Backend API** (FastAPI) — owns business operations, authentication, validation, persistence, and versioned REST endpoints
-- **Frontend Application** (Streamlit) — provides the user interface, communicating with the backend exclusively through HTTP APIs
+## Architecture
 
-## Project Structure
+The system follows **modular monolith** architecture with **Clean Architecture** layer separation (constitution Sections 2-3):
 
 ```
-bss-core/
-├── .specify/              # Specification and configuration hub
-├── docs/                  # Project documentation and sprint planning
-├── specs/                 # Feature specifications
-│   └── 001-project-foundation/  # S00: Project Foundation
-├── specs/001-project-foundation/
-│   ├── plan.md            # Implementation plan
-│ ├── research.md          # Phase 0 research findings
-│ ├── data-model.md        # Entity-relationship model
-│ ├── quickstart.md        # Validation guide
-│ ├── tasks.md             # 26 implementation tasks across 5 phases
-│ ├── spec.md              # Feature specification
-│ └── contracts/           # API contract specifications
-├── src/                   # Source code (single project layout)
-│   ├── models/            # SQLAlchemy models and entities
-│   ├── services/          # Business use-case services
-│   ├── api/               # FastAPI route handlers
-│   └── lib/               # Shared library code
-├── tests/                 # Test suites
-│   ├── unit/              # Unit tests
-│   ├── integration/       # Integration tests
-│   └── contract/          # Contract tests
-├── pyproject.toml         # Project configuration with uv
-├── .gitignore
-└── README.md              # This file
+src/
+├── domain/           # Domain layer — entities, value objects, business rules
+│   ├── database.py   # SQLite engine & session management
+│   └── auth.py       # Argon2id hashing, JWT, RBAC permissions
+├── application/      # Application layer — use cases, services, ports
+├── infrastructure/   # Infrastructure layer — repositories, DB implementation
+├── presentation/     # Presentation layer — FastAPI routes, Streamlit UI
+│   └── frontend/     # Streamlit application (constitution Section 3)
+├── api/              # FastAPI application with health check endpoint
+└── bss_core/         # Core package
 ```
+
+## Technology Stack
+
+- **Language**: Python 3.12+
+- **Backend**: FastAPI, SQLAlchemy 2.x, Argon2id, PyJWT
+- **Frontend**: Streamlit
+- **Package Manager**: uv
+- **Testing**: pytest (unit, integration, API tests)
+- **Linting**: Ruff
+- **Database**: SQLite (initial, designed for evolution per constitution Section 7)
 
 ## Quickstart
 
@@ -54,15 +53,12 @@ bss-core/
 git clone <repository-url>
 cd bss-core
 
-# 2. Initialize the feature foundation
-uv init
-bash .specify/scripts/bash/setup-plan.sh --json
-
 # 2. Install dependencies
 uv sync
 
-# 3. Verify the foundation is set up
-ls specs/001-project-foundation/spec.md
+# 3. Verify foundation setup
+ls specs/002-user-auth/spec.md
+ls specs/002-user-auth/plan.md
 ```
 
 ### Running the Applications
@@ -70,41 +66,52 @@ ls specs/001-project-foundation/spec.md
 **Backend (FastAPI)**:
 
 ```bash
-uv run uvicorn app:app --host 0.0.0.0 --port 8000
+python3 -m uvicorn src.api.health:app --host 0.0.0.0 --port 8000
 ```
+
+Backend available at `http://localhost:8000`:
+- `GET /health` — basic health check (`{"status": "ok"}`)
+- `GET /health/detailed` — detailed status with version
 
 **Frontend (Streamlit)**:
 
 ```bash
-streamlit run streamlit_app.py
+streamlit run src/frontend/app.py
 ```
 
-## Development
+Frontend available at `http://localhost:8501`:
+- Sidebar navigation (Dashboard, Modules, Settings)
+- Shows backend connection status
+- Communicates with backend through HTTP APIs only
 
-### Project Phases
+## Implementation Status
 
-The implementation follows a phased approach:
+All **22 core tasks** across Phases 1-4 are complete:
 
-1. **Phase 1: Setup** — Project initialization and basic structure
-2. **Phase 2: Foundational** — Blocking prerequisites (MUST complete before user stories)
-3. **Phase 3: User Story 1 (P1)** — MVP: Development environment for developers and end customers
-4. **Phase 4: User Story 2 (P2)** — Architecture foundation with layer-separated modules
-5. **Phase 5: Polish** — Cross-cutting concerns, documentation, performance optimization
+| Phase | Tasks | Status |
+|-------|-------|--------|
+| **Phase 1: Setup** | T001-T002 | Complete |
+| **Phase 2: Foundational** | T004-T008 | Complete (SQLite, Alembic, JWT auth, layer separation, pytest) |
+| **Phase 3: User Story 1** | T010-T014 | Complete (health checks, FastAPI app, Streamlit app, onboarding) |
+| **Phase 4: User Story 2** | T015-T022 | Complete (routing, module architecture, layer separation, API endpoints) |
 
-### Key Decisions
+All **14 tests pass** without errors.
 
-- **Language/Framework**: Python 3.12+ with FastAPI, SQLAlchemy 2.x, Streamlit
-- **Database**: SQLite (initial, designed for evolution to other databases per constitution)
-- **Architecture**: Modular monolith with DDD and Clean Architecture (constitution Sections 2-3)
-- **Authentication**: JWT with Argon2id password hashing (constitution Section 9.2)
-- **Testing**: pytest with unit, integration, and API test support (constitution Section 10)
+## Key Decisions
+
+- **Two-application architecture**: Backend API + Frontend Streamlit with strict HTTP API separation (constitution Section 3)
+- **SQLite initial database**: Designed for evolution to production data stores per constitution Section 7
+- **JWT authentication**: Centralized authentication mechanism (constitution Section 9)
+- **Argon2id password hashing**: Industry-standard password hashing per constitution Section 9.2
+- **RBAC least-privilege**: Role-based access control with minimum necessary permissions (constitution Section 9.4)
+- **Technology-agnostic specifications**: All success criteria measurable without implementation details
 
 ## Sprints
 
 The system is delivered across 7 sprints (S00–S07):
 
-- **S00** — Project Foundation (this feature)
-- **S01** — Identity & Access
+- **S00** — Project Foundation
+- **S01** — Identity & Access *(current)*
 - **S02** — Customer Management
 - **S03** — Order Management
 - **S04** — Shipment Management
