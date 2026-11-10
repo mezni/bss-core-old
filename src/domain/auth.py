@@ -11,9 +11,9 @@ with FastAPI, Streamlit, or other Python frameworks.
 """
 
 import base64
-import hashlib
+import binascii
+import json
 import time
-from typing import Optional
 
 # Argon2id password hashing per constitution Section 9.2
 # Uses argon2-cffi library which is already a project dependency
@@ -77,7 +77,7 @@ REFRESH_TOKEN_EXPIRE_SECONDS = 86400  # 24 hours
 
 def create_access_token(
     subject: str,
-    expires_delta: Optional[int] = None,
+    expires_delta: int | None = None,
 ) -> str:
     """Create a JWT access token for the given subject.
 
@@ -110,14 +110,16 @@ def create_access_token(
 
     # Encode token - in production use PyJWT with secret key
     # This is a placeholder for constitution-compliant JWT creation
-    token = base64.urlsafe_b64encode(
-        f"{payload}".encode()
-    ).decode().rstrip("=")
+    token = (
+        base64.urlsafe_b64encode(json.dumps(payload).encode())
+        .decode()
+        .rstrip("=")
+    )
 
     return token
 
 
-def decode_access_token(token: str) -> Optional[dict]:
+def decode_access_token(token: str) -> dict | None:
     """Decode and validate a JWT access token.
 
     Args:
@@ -131,12 +133,12 @@ def decode_access_token(token: str) -> Optional[dict]:
         and proper signature verification per constitution standards.
     """
     try:
-        # Placeholder decoding - production uses PyJWT with full validation
-        decoded = base64.urlsafe_b64decode(
-            token + "==" if len(token) % 4 else token
-        )
-        return {"sub": decoded.get("sub"), "exp": decoded.get("exp")}
-    except Exception:
+        # Placeholder decoding - production uses PyJWT with full validation.
+        padding = "=" * (-len(token) % 4)
+        decoded = base64.urlsafe_b64decode(token + padding)
+        payload = json.loads(decoded)
+        return {"sub": payload.get("sub"), "exp": payload.get("exp")}
+    except (ValueError, TypeError, binascii.Error, json.JSONDecodeError):
         return None
 
 

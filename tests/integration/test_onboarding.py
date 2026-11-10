@@ -9,6 +9,7 @@ Tests the complete developer onboarding experience:
 """
 
 import os
+import py_compile
 import subprocess
 import sys
 
@@ -17,8 +18,6 @@ src_path = os.path.join(os.path.dirname(__file__), "..", "..", "src")
 if src_path not in sys.path:
     sys.path.insert(0, src_path)
 
-import py_compile
-
 
 def test_project_initialization():
     """Test that the project is properly initialized for developer onboarding."""
@@ -26,7 +25,9 @@ def test_project_initialization():
     assert os.path.exists("pyproject.toml"), "pyproject.toml not found"
 
     # Verify uv is available as a CLI tool
-    result = subprocess.run(["uv", "--version"], capture_output=True, text=True)
+    result = subprocess.run(
+        ["uv", "--version"], capture_output=True, text=True, check=False
+    )
     assert result.returncode == 0, "uv not installed or not working"
 
     # Verify SQLite database exists
@@ -35,9 +36,9 @@ def test_project_initialization():
 
 def test_backend_starts_without_errors():
     """Test that the backend FastAPI application starts without errors."""
-    from api.health import app as fastapi_app
-
     from fastapi.testclient import TestClient
+
+    from api.health import app as fastapi_app
 
     client = TestClient(fastapi_app)
     response = client.get("/health")

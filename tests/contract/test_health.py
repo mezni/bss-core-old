@@ -4,7 +4,6 @@ Tests that the FastAPI backend health check endpoint exists and responds correct
 This test should FAIL before the backend is implemented (T012), then PASS after.
 """
 
-import pytest
 from fastapi.testclient import TestClient
 
 

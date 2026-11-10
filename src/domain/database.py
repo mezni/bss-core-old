@@ -5,12 +5,16 @@ technology standards. Initially configured for SQLite, designed for evolution
 to other databases (PostgreSQL, MySQL) per module needs.
 """
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+import os
 
-# SQLite configuration - initial database per constitution technology standards
-# Designed for evolution to other databases by changing the connection string
-SQLALCHEMY_DATABASE_URL = "sqlite:///./db/bss_core.db"
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
+
+# SQLite configuration - initial database per constitution technology standards.
+# BSS_DATABASE_URL allows tests and migration checks to target a clean database.
+SQLALCHEMY_DATABASE_URL = os.environ.get(
+    "BSS_DATABASE_URL", "sqlite:///./db/bss_core.db"
+)
 
 # Engine configuration with connection pooling and thread safety
 engine = create_engine(

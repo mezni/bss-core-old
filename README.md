@@ -1,42 +1,52 @@
-# BSS Core — S01 Identity & Access
+# BSS Core — S02 Customer Management
 
 ## Overview
 
-**BSS Core** is a modular business management system for authenticated access control, role-based permissions, and module-based authorization. The system implements **S01 Identity & Access** featuring:
+**BSS Core** is a modular business management system. S01 delivers authenticated
+access control, role-based permissions, and module-based authorization. S02 adds
+**Customer Management**: customer identity, lifecycle, contacts, addresses,
+search, and a downstream eligibility contract.
 
-- **JWT authentication** with credential-based access for developers and end customers
-- **Role-Based Access Control (RBAC)** with least-privilege principle per constitution Section 9.4
+- **JWT authentication** with permission claims (`customer:view`, `customer:manage`)
 - **Argon2id password hashing** per constitution Section 9.2
-- **Session management** with timeout and renewal mechanisms
-- **Audit logging** of all authentication events
-- **Two-application architecture**: backend API (FastAPI) + frontend (Streamlit) with strict separation per constitution Section 3
+- **Customer registry** for individuals and businesses with type-scoped uniqueness
+- **Optimistic concurrency** on every customer aggregate mutation
+- **Contacts and addresses** with single-primary rules
+- **Search, filtering, and pagination** over customer data
+- **Eligibility port** for Order, Shipment, and Billing without cross-module ORM access
+- **Two-application architecture**: FastAPI backend + Streamlit frontend over HTTP
 
 ## Architecture
 
-The system follows **modular monolith** architecture with **Clean Architecture** layer separation (constitution Sections 2-3):
+The system follows a **modular monolith** with Clean Architecture layers:
 
 ```
 src/
-├── domain/           # Domain layer — entities, value objects, business rules
-│   ├── database.py   # SQLite engine & session management
-│   └── auth.py       # Argon2id hashing, JWT, RBAC permissions
-├── application/      # Application layer — use cases, services, ports
-├── infrastructure/   # Infrastructure layer — repositories, DB implementation
-├── presentation/     # Presentation layer — FastAPI routes, Streamlit UI
-│   └── frontend/     # Streamlit application (constitution Section 3)
-├── api/              # FastAPI application with health check endpoint
-└── bss_core/         # Core package
+├── domain/                  # Database engine, auth primitives
+├── application/             # Cross-cutting application layer
+├── infrastructure/          # Cross-cutting infrastructure layer
+├── presentation/            # Presentation layer
+├── api/                     # FastAPI composition root (src/api/health.py)
+├── frontend/                # Streamlit UI (HTTP only)
+│   └── customer/            # Customer API client and pages
+└── models/
+    └── customer_management/
+        ├── domain/          # Entities, value objects, repository port
+        ├── application/     # DTOs, commands, queries, use cases, eligibility port
+        ├── infrastructure/  # SQLAlchemy ORM, repository, logging
+        ├── api/             # Schemas, router, dependencies, error envelope
+        └── presentation/    # Module presentation boundary
 ```
 
 ## Technology Stack
 
 - **Language**: Python 3.12+
-- **Backend**: FastAPI, SQLAlchemy 2.x, Argon2id, PyJWT
-- **Frontend**: Streamlit
+- **Backend**: FastAPI, SQLAlchemy 2.x, Alembic, Argon2id, PyJWT
+- **Frontend**: Streamlit, httpx
 - **Package Manager**: uv
-- **Testing**: pytest (unit, integration, API tests)
+- **Testing**: pytest (unit, application, integration, contract)
 - **Linting**: Ruff
-- **Database**: SQLite (initial, designed for evolution per constitution Section 7)
+- **Database**: SQLite (initial, designed for evolution)
 
 ## Quickstart
 
@@ -49,16 +59,10 @@ src/
 ### Installation
 
 ```bash
-# 1. Clone the repository
 git clone <repository-url>
 cd bss-core
-
-# 2. Install dependencies
 uv sync
-
-# 3. Verify foundation setup
-ls specs/002-user-auth/spec.md
-ls specs/002-user-auth/plan.md
+uv run alembic upgrade head
 ```
 
 ### Running the Applications
@@ -66,53 +70,77 @@ ls specs/002-user-auth/plan.md
 **Backend (FastAPI)**:
 
 ```bash
-python3 -m uvicorn src.api.health:app --host 0.0.0.0 --port 8000
+uv run uvicorn src.api.health:app --host 0.0.0.0 --port 8000
 ```
-
-Backend available at `http://localhost:8000`:
-- `GET /health` — basic health check (`{"status": "ok"}`)
-- `GET /health/detailed` — detailed status with version
 
 **Frontend (Streamlit)**:
 
 ```bash
-streamlit run src/frontend/app.py
+BSS_API_URL=http://localhost:8000 BSS_API_TOKEN=<jwt> \
+  uv run streamlit run src/frontend/app.py
 ```
 
-Frontend available at `http://localhost:8501`:
-- Sidebar navigation (Dashboard, Modules, Settings)
-- Shows backend connection status
-- Communicates with backend through HTTP APIs only
+Set `BSS_JWT_SECRET` to the secret used by the identity service to sign tokens.
+The development fallback is not suitable for production.
+
+### Tests and linting
+
+```bash
+uv run pytest
+uv run ruff check src tests
+```
+
+## Customer API
+
+Base path: `/api/v1/customers`
+
+| Method | Path | Permission |
+|---|---|---|
+| `POST` | `/` | `customer:manage` |
+| `GET` | `/` | `customer:view` |
+| `GET` | `/{id}` | `customer:view` |
+| `PATCH` | `/{id}` | `customer:manage` |
+| `POST` | `/{id}/deactivate` | `customer:manage` |
+| `POST` | `/{id}/reactivate` | `customer:manage` |
+| `GET` | `/{id}/eligibility` | `customer:view` |
+| `POST` | `/{id}/contacts` | `customer:manage` |
+| `PATCH` | `/{id}/contacts/{contact_id}` | `customer:manage` |
+| `DELETE` | `/{id}/contacts/{contact_id}` | `customer:manage` |
+| `POST` | `/{id}/addresses` | `customer:manage` |
+| `PATCH` | `/{id}/addresses/{address_id}` | `customer:manage` |
+| `DELETE` | `/{id}/addresses/{address_id}` | `customer:manage` |
+
+Every mutation increments the customer aggregate `version`. See
+`docs/customer-management.md` and `specs/003-customer-management/contracts/`
+for the full contract and consumer port.
 
 ## Implementation Status
 
-All **22 core tasks** across Phases 1-4 are complete:
+| Sprint | Scope | Status |
+|---|---|---|
+| S01 | Identity & Access foundation | Complete |
+| S02 | Customer Management | Complete (67 tasks) |
 
-| Phase | Tasks | Status |
-|-------|-------|--------|
-| **Phase 1: Setup** | T001-T002 | Complete |
-| **Phase 2: Foundational** | T004-T008 | Complete (SQLite, Alembic, JWT auth, layer separation, pytest) |
-| **Phase 3: User Story 1** | T010-T014 | Complete (health checks, FastAPI app, Streamlit app, onboarding) |
-| **Phase 4: User Story 2** | T015-T022 | Complete (routing, module architecture, layer separation, API endpoints) |
-
-All **14 tests pass** without errors.
+S02 includes unit, application, integration, contract, migration, and
+performance coverage. Run `uv run pytest` for the current suite.
 
 ## Key Decisions
 
-- **Two-application architecture**: Backend API + Frontend Streamlit with strict HTTP API separation (constitution Section 3)
-- **SQLite initial database**: Designed for evolution to production data stores per constitution Section 7
-- **JWT authentication**: Centralized authentication mechanism (constitution Section 9)
-- **Argon2id password hashing**: Industry-standard password hashing per constitution Section 9.2
-- **RBAC least-privilege**: Role-based access control with minimum necessary permissions (constitution Section 9.4)
-- **Technology-agnostic specifications**: All success criteria measurable without implementation details
+- **Two-application architecture**: backend API + Streamlit frontend with strict HTTP separation
+- **Modular monolith**: customer code isolated under `src/models/customer_management/`
+- **Type-scoped uniqueness**: individual email and business registration/tax ID
+- **Optimistic concurrency**: stale aggregate versions return `409 STALE_UPDATE`
+- **Partial unique indexes**: enforce uniqueness at the database boundary
+- **Application port**: downstream modules use `CustomerEligibilityPort`, never the repository
+- **Structured logging without PII**: lifecycle events log IDs, actions, status, and versions only
 
 ## Sprints
 
 The system is delivered across 7 sprints (S00–S07):
 
 - **S00** — Project Foundation
-- **S01** — Identity & Access *(current)*
-- **S02** — Customer Management
+- **S01** — Identity & Access
+- **S02** — Customer Management *(current)*
 - **S03** — Order Management
 - **S04** — Shipment Management
 - **S05** — Billing Management

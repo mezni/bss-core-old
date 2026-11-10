@@ -4,8 +4,8 @@ import pytest
 @pytest.fixture(scope="session")
 def db_session():
     """Session-scoped database fixture."""
-    import sqlite3
     import os
+    import sqlite3
 
     os.makedirs("db", exist_ok=True)
     conn = sqlite3.connect("db/bss_core.db")
