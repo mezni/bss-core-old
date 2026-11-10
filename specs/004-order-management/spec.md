@@ -18,6 +18,7 @@
 - Q: Can orders in cancelled state be restored? → A: Cancellation is terminal; orders in cancelled state cannot be restored. To create a new order, the customer creates a fresh order. Aligns with simple domain modeling and avoids state-transition ambiguity.
 
 - Q: Should order listing endpoints support pagination and search/filter? → A: Follow S02 pattern with `q`, `status`, `page`, `page_size` parameters; maintain consistency across modules; search matches order ID, customer reference, and status; page defaults to 1, page_size defaults to 20, max 100
+- Q: What authentication mechanism and data protection standards should orders enforce? → A: JWT + Argon2id password hashing
 
 ## User Scenarios & Testing *(mandatory)*
 

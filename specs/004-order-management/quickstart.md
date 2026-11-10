@@ -1,118 +1,161 @@
-# Quickstart Validation Guide: Order Management (S03)
+# Quickstart: Order Management Validation
 
-**Purpose**: Runnable validation scenarios that prove the Order Management feature works end-to-end. This guide references [data-model.md](./data-model.md) and [contracts/](./contracts/) instead of duplicating them.
+**Generated**: 2026-11-10
+**Feature**: Order Management (S03)
+**Spec**: specs/004-order-management/spec.md
+**Research**: specs/004-order-management/research.md
+**Contracts**: contracts/order_management/order_management_api.yaml
 
 ## Prerequisites
 
-- Python 3.12+ and `uv`
-- Repository cloned at the project root
-- Backend and frontend dependencies installed
+- Python 3.12+ installed
+- UV package manager configured
+- BSS-Core repository cloned and dependencies installed (`uv sync`)
+- SQLite3 available (comes with Python)
+- JWT authentication token for API tests (obtain via S01 auth flow)
 
 ## Setup
 
 ```bash
+# 1. Install dependencies
 uv sync
-uv run alembic upgrade head
+
+# 2. Apply database migrations
+cd src/infrastructure
+alembic upgrade head
+
+# 3. Start the backend server
+uv run uvicorn src.presentation.api:app --reload
+
+# 4. (Optional) Start the Streamlit frontend
+uv run streamlit run src/presentation/streamlit_app.py
 ```
-
-Expected: the `orders` table exists in `db/bss_core.db`, with columns for all Order attributes (id, status, subtotal, tax_amount, total, customer_id, version, created_at, updated_at) and appropriate indexes.
-
-Start the backend:
-
-```bash
-uv run uvicorn src.api.health:app --host 0.0.0.0 --port 8000
-```
-
-## Automated Validation
-
-```bash
-uv run pytest tests/unit/customer_management  # baseline (S02)
-uv run pytest tests/integration/customer_management  # S02 integration tests
-uv run ruff check src tests
-```
-
-Expected: Ruff reports no issues; S02 tests pass.
 
 ## Validation Scenarios
 
-### Scenario 1 — Migration from a clean database
+### Scenario 1: Create Order (P1 - Core Flow)
 
-1. Delete `db/bss_core.db` (development only).
-2. Run `uv run alembic upgrade head`.
-3. Inspect the schema.
+**Goal**: Verify a registered customer can create a new order in draft status.
 
-**Expected**: the `orders` table and all indexes listed in `data-model.md` are present; `alembic downgrade base` followed by `upgrade head` succeeds.
+**Steps**:
+1. Obtain a valid JWT token for an eligible customer (from S01 auth flow)
+2. POST to `/api/v1/orders` with:
+   ```json
+   {
+     "customer_id": "<eligible-customer-uuid>",
+     "items": [
+       {
+         "description": "Widget A",
+         "quantity": 2,
+         "unit_price": 10.50
+       }
+     ]
+   }
+   ```
+3. Verify response status: `201 Created`
+4. Verify order response contains:
+   - `status`: `draft`
+   - `subtotal`: `21.0` (2 × 10.50)
+   - `tax_amount`: calculated (fixed rate × subtotal)
+   - `total`: subtotal + tax_amount
+   - `items`: line item with `line_total`: `21.0`
 
----
-
-### Scenario 2 — Create an order with items
-
-1. `POST /api/v1/orders` with a valid `customer_id` (from S02, eligible customer) and at least one order item.
-2. Verify the response has `status = draft` and `version = 1`.
-3. Repeat the request with the same payload.
-
-**Expected**: first request returns `201` with `status = draft` and `version = 1`; the repeat returns `409 DUPLICATE_ORDER` (or equivalent error for duplicate creation without idempotency key). *Note: exact error code depends on idempotency design.*
-
----
-
-### Scenario 3 — Order status transitions
-
-1. Create an order with at least one item (Scenario 2).
-2. `PATCH /api/v1/orders/{{order_id}}` with `status = confirmed` and matching `version`.
-3. Verify the order status is now `confirmed` and `version` incremented.
-4. Attempt to `PATCH` with `status = drafted` (invalid transition) — should return `409 INVALID_TRANSITION`.
-5. Attempt to `PATCH` with `status = confirmed` and stale `version` — should return `409 STALE_UPDATE` with `current_version`.
-
-**Expected**: confirmed transition succeeds with version increment; invalid transitions rejected; stale updates rejected with current version.
-
----
-
-### Scenario 4 — Order cancellation (terminal)
-
-1. Create an order with at least one item.
-2. `POST /api/v1/orders/{{order_id}}/cancel` (or `PATCH` with `status = cancelled` and valid version).
-3. Verify the order status is now `cancelled`.
-4. Attempt to confirm or modify the cancelled order — should return `409 INVALID_TRANSITION` or appropriate error.
-
-**Expected**: order status becomes `cancelled`; cancellation is terminal; no restoration from cancelled state; creating a new order requires a fresh order.
+**Expected outcome**: Order is persisted with draft status, correct total calculation, and unique UUID v4 identifier.
 
 ---
 
-### Scenario 5 — Order listing with pagination and search
+### Scenario 2: Confirm Order (P2 - Status Transition)
 
-1. Create multiple orders (at least 5) with different statuses and customers.
-2. `GET /api/v1/orders?status=confirmed` — verify only confirmed orders returned, correct `total`.
-3. `GET /api/v1/orders?page=1&page_size=10` — verify pagination; first page has 10 items, `total` reflects all matching orders.
-4. `GET /api/v1/orders?q=ORDER` — verify search matches against order ID, customer reference, and status.
-5. `GET /api/v1/orders?page=2&page_size=10` — verify non-overlapping pages.
+**Goal**: Verify an order in draft status can be confirmed when it has at least one item.
 
-**Expected**: matching items only, correct `total`, non-overlapping pages. A search with no matches returns `200` with empty `items` array.
+**Steps**:
+1. Create an order (Scenario 1) and note its `order_id`
+2. POST to `/api/v1/orders/{order_id}/confirm`
+3. Verify response status: `200 OK`
+4. Verify order response `status` field: `confirmed`
 
----
-
-### Scenario 6 — Order retrieval
-
-1. `GET /api/v1/orders/{{order_id}}` with a valid order ID from Scenario 2.
-2. Verify the response includes all order attributes, items, customer info, and version.
-3. `GET /api/v1/orders/{{nonexistent_id}}` — should return `404 NOT FOUND`.
-
-**Expected**: full order details returned; 404 for nonexistent order.
+**Expected outcome**: Order status transitions from `draft` to `confirmed`. Order cannot be arbitrarily modified after confirmation.
 
 ---
 
-## Acceptance Mapping
+### Scenario 3: Reject Confirmation Without Items (P2 - Precondition)
 
-| Scenario | Spec coverage |
+**Goal**: Verify the system rejects order confirmation without any items.
+
+**Steps**:
+1. Create an order with 0 items (or remove all items)
+2. POST to `/api/v1/orders/{order_id}/confirm`
+3. Verify response status: `400 Bad Request`
+4. Verify error response contains clear message about missing items
+
+**Expected outcome**: Confirmation is rejected with descriptive error; order remains in draft status.
+
+---
+
+### Scenario 4: Cancel Order (P3 - Terminal State)
+
+**Goal**: Verify order cancellation is terminal and cannot be restored.
+
+**Steps**:
+1. Create an order in draft status (no items required for draft cancellation)
+2. POST to `/api/v1/orders/{order_id}/cancel`
+3. Verify response status: `200 OK`
+4. Verify order `status`: `cancelled`
+5. Attempt to restore the order:
+   - POST to a restoration endpoint (should not exist) or attempt confirmation
+   - Verify the system rejects the restoration attempt
+6. Attempt to create a new order for the same customer
+7. Verify a fresh order can be created (cancellation is terminal, not retroactive)
+
+**Expected outcome**: Order status becomes `cancelled`; restoration is rejected; customer must create a fresh order.
+
+---
+
+### Scenario 5: Invalid Status Transition (P3 - Boundary Rule)
+
+**Goal**: Verify invalid status transitions are rejected.
+
+**Steps**:
+1. Create an order and confirm it (status: `confirmed`)
+2. Attempt to cancel the confirmed order:
+   - POST to `/api/v1/orders/{order_id}/cancel`
+3. Verify response status: `400` or `409 Conflict`
+4. Verify error message indicates invalid state transition
+
+**Expected outcome**: Cancellation of confirmed order is rejected; order remains in `confirmed` status.
+
+---
+
+### Scenario 6: Order Listing with Pagination (P3 - S02 Consistency)
+
+**Goal**: Verify order listing follows S02 pagination/search pattern.
+
+**Steps**:
+1. GET `/api/v1/orders?page=1&page_size=20`
+2. Verify response includes orders with pagination metadata
+3. Test search parameters:
+   - `q=ord-` (search by order ID prefix)
+   - `q=cust-` (search by customer reference - if supported)
+   - `status=confirmed` (filter by status)
+4. Verify default values: `page` defaults to 1, `page_size` defaults to 20, max `page_size` is 100
+
+**Expected outcome**: Order listing is consistent with S02 pattern; search matches order ID, customer reference, and status.
+
+## Expected Outcomes Summary
+
+| Scenario | Pass Criteria |
 |---|---|
-| 1 | FR-002, data model, constitution Section 7 |
-| 2–3 | FR-001, FR-002, FR-005, FR-006 |
-| 4 | FR-005, FR-012, SC-007 |
-| 5 | FR-010, FR-011, SC-003 |
-| 6 | FR-007, SC-005 |
+| 1. Create Order | 201 response; correct subtotal/tax/total; draft status; UUID v4 ID |
+| 2. Confirm Order | 200; status → confirmed |
+| 3. Confirm Without Items | 400; clear error message |
+| 4. Cancel Order | 200; status → cancelled; fresh order creatable |
+| 5. Invalid Transition | 400/409; rejected with message |
+| 6. Order Listing | Pagination; search by q, status; defaults 1/20/100 |
 
 ## Notes
 
-- All API endpoints require appropriate permissions: `customer:view` for read operations, `customer:manage` for write/list operations.
-- Order totals (subtotal, tax, total) are calculated correctly with ±2% tolerance per success criteria SC-003.
-- Status transition boundaries are strict; the system enforces these boundaries without exposing internal implementation details.
-- Cancellation is terminal; orders in cancelled state cannot be restored.
+- All validation relies on the BSS-Core constitution constraints (SQLite, SQLAlchemy 2.x, Pydantic validation, JWT auth, Argon2id password hashing)
+- Order totals use fixed tax rate applied to subtotal (no jurisdiction-specific logic for S03 MVP)
+- Order items carry inline description/price/quantity; no separate product catalog in S03
+- Cancellation is terminal; orders in cancelled state cannot be restored
+- Order listing follows S02 pagination/search pattern for consistency

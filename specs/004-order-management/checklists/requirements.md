@@ -33,4 +33,4 @@
 
 - All 5 clarifications integrated: UUID v4 order IDs, free-form item descriptions, domain-layer transition preconditions, terminal cancellation, S02-consistent pagination/search
 - Spec quality checklist re-validated against updated spec: 16/16 items passing
-- Checklist items unchanged from prior state (all were already passing)
+- Spec quality checklist re-validated: security clarification (JWT + Argon2id) added; no checklist items changed state

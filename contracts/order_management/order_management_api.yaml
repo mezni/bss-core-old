@@ -1,0 +1,374 @@
+# Order Management API Contract
+
+**Generated**: 2026-11-10
+**Version**: v1
+**Feature**: Order Management (S03)
+**Base Path**: `/api/v1/orders`
+
+## Summary
+
+Order Management API provides REST endpoints for creating, managing, and tracking customer orders. All endpoints require authenticated user with appropriate permissions (`customer:manage` for write operations, `customer:view` for read operations).
+
+## Tags
+
+- `orders` - Order management operations
+
+## Paths
+
+### Create Order
+
+```yaml
+POST /api/v1/orders
+tags:
+  - orders
+summary: Create a new order in draft status
+description: |
+  Creates a new order for an eligible customer. The order starts in draft status
+  and requires at least one order item before it can be confirmed.
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        required:
+          - customer_id
+          - items
+        properties:
+          customer_id:
+            type: string
+            format: uuid
+            description: |
+              Identifier of the customer creating the order. Must reference an
+              eligible customer from S02 Customer Management.
+          items:
+            type: array
+            minItems: 1
+            maxItems: 50
+            description: |
+              Order items. At least one item required. Each item includes
+              description, quantity, and unit price.
+            items:
+              $ref: "#/components/schemas/OrderItemCreate"
+          status:
+            type: string
+            enum: [draft]
+            default: draft
+            description: Initial status of the order (defaults to draft)
+responses:
+  201:
+    description: Order created successfully
+    content:
+      application/json:
+        schema:
+          $ref: "#/components/schemas/OrderResponse"
+  400:
+    description: Invalid input - order rejected
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              description: Human-readable error message
+  401:
+    description: Unauthenticated - JWT token required
+  403:
+    description: Forbidden - insufficient permissions
+  409:
+    description: Conflict - customer not eligible or order creation conflict
+
+### Get Order
+
+```yaml
+GET /api/v1/orders/{order_id}
+tags:
+  - orders
+summary: Retrieve order details
+description: Fetch a specific order by its unique identifier.
+parameters:
+  - name: order_id
+    in: path
+    required: true
+    schema:
+      type: string
+      format: uuid
+      description: The unique identifier of the order to retrieve
+responses:
+  200:
+    description: Order details retrieved successfully
+    content:
+      application/json:
+        schema:
+          $ref: "#/components/schemas/OrderResponse"
+  404:
+    description: Order not found
+
+### Update Order Items
+
+```yaml
+PATCH /api/v1/orders/{order_id}/items
+tags:
+  - orders
+summary: Add, modify, or remove order items
+description: |
+  Modify the items within an order. Order items can be added, quantities
+  updated, or items removed. The order total updates automatically as items change.
+parameters:
+  - name: order_id
+    in: path
+    required: true
+    schema:
+      type: string
+      format: uuid
+      description: The unique identifier of the order to modify
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          items:
+            type: array
+            description: Items to set on the order
+            items:
+              $ref: "#/components/schemas/OrderItemUpdate"
+responses:
+  200:
+    description: Order items updated successfully
+    content:
+      application/json:
+        schema:
+          $ref: "#/components/schemas/OrderResponse"
+  400:
+    description: Invalid item configuration
+  404:
+    description: Order not found
+  409:
+    description: Cannot modify order - invalid state (e.g., order already confirmed)
+
+### Confirm Order
+
+```yaml
+POST /api/v1/orders/{order_id}/confirm
+tags:
+  - orders
+summary: Confirm the order
+description: |
+  Transition order from draft status to confirmed. Requires at least one order
+  item; the system rejects the confirmation request with a clear error if no
+  items are present.
+responses:
+  200:
+    description: Order confirmed successfully
+    content:
+      application/json:
+        schema:
+          $ref: "#/components/schemas/OrderResponse"
+  400:
+    description: Cannot confirm - order must have at least one item; order not in draft status
+  404:
+    description: Order not found
+  409:
+    description: Invalid state transition
+
+### Cancel Order
+
+```yaml
+POST /api/v1/orders/{order_id}/cancel
+tags:
+  - orders
+summary: Cancel the order
+description: |
+  Transition order from draft status to cancelled. Cancellation is terminal;
+  orders in cancelled state cannot be restored. To create a new order after
+  cancellation, the customer creates a fresh order.
+responses:
+  200:
+    description: Order cancelled successfully
+    content:
+      application/json:
+        schema:
+          $ref: "#/components/schemas/OrderResponse"
+  400:
+    description: Cannot cancel - order not in draft status or order has items
+  404:
+    description: Order not found
+  410:
+    description: Order cancelled - terminal state; order cannot be restored
+
+### Get Order Status
+
+```yaml
+GET /api/v1/orders/{order_id}/status
+tags:
+  - orders
+summary: Get order current status
+description: Retrieve the current status of an order and its lifecycle position.
+parameters:
+  - name: order_id
+    in: path
+    required: true
+    schema:
+      type: string
+      format: uuid
+      description: The unique identifier of the order
+responses:
+  200:
+    description: Order status retrieved successfully
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [draft, confirmed, shipped, delivered, cancelled]
+            status_timestamp:
+              type: string
+              format: date-time
+              description: Timestamp of current status
+  404:
+    description: Order not found
+
+## Components
+
+### Schemas
+
+#### OrderItemCreate
+
+```yaml
+type: object
+required:
+  - description
+  - quantity
+  - unit_price
+properties:
+  description:
+    type: string
+    description: Free-form product/service description; carries all product/service details inline
+  quantity:
+    type: integer
+    description: Number of units; minimum 1
+    minimum: 1
+  unit_price:
+    type: number
+    description: Price per unit; must be >= 0
+    minimum: 0
+```
+
+#### OrderItemUpdate
+
+```yaml
+type: object
+properties:
+  items:
+    type: array
+    description: Items to set on the order
+    items:
+      $ref: "#/components/schemas/OrderItemCreate"
+```
+
+#### OrderItemStatus
+
+```yaml
+type: object
+required:
+  - id
+  - description
+  - quantity
+  - unit_price
+  - line_total
+properties:
+  id:
+    type: string
+    format: uuid
+    description: Unique line item identifier
+  description:
+    type: string
+    description: Free-form product/service description
+  quantity:
+    type: integer
+    description: Number of units
+  unit_price:
+    type: number
+    description: Price per unit
+    minimum: 0
+  line_total:
+    type: number
+    description: Calculated line total (quantity × unit_price)
+```
+
+#### OrderResponse
+
+```yaml
+type: object
+required:
+  - id
+  - status
+  - subtotal
+  - tax_amount
+  - total
+  - customer_id
+  - created_at
+  - updated_at
+  - items
+properties:
+  id:
+    type: string
+    format: uuid
+    description: Unique order identifier (UUID v4, format: ORD-550e8400-e29b-41d4-a716-446655440000)
+  status:
+    type: string
+    enum: [draft, confirmed, shipped, delivered, cancelled]
+    description: Current lifecycle stage of the order
+  subtotal:
+    type: number
+    description: Sum of item line totals before tax; precision: 2 decimal places
+  tax_amount:
+    type: number
+    description: Tax calculated on subtotal; precision: 2 decimal places
+  total:
+    type: number
+    description: Grand total (subtotal + tax_amount); precision: 2 decimal places
+  customer_id:
+    type: string
+    format: uuid
+    description: Identifier of the customer who created the order
+  created_at:
+    type: string
+    format: date-time
+    description: Order creation timestamp
+  updated_at:
+    type: string
+    format: date-time
+    description: Last update timestamp
+  items:
+    type: array
+    description: Order items
+    items:
+      $ref: "#/components/schemas/OrderItemStatus"
+    default: []
+```
+
+#### ErrorResponse
+
+```yaml
+type: object
+required:
+  - error
+  - code
+  - message
+properties:
+  error:
+    type: string
+    description: Error category (e.g., "Bad Request", "Unauthorized", "Not Found", "Conflict")
+  code:
+    type: integer
+    description: Machine-readable error code
+  message:
+    type: string
+    description: Human-readable error message with actionable guidance
+```
