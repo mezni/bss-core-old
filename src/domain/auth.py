@@ -21,6 +21,7 @@ import time
 try:
     from argon2 import PasswordHasher
     from argon2.exceptions import VerifyMismatchError
+
     password_hasher = PasswordHasher()
 except ImportError:
     # Fallback: use PBKDF2 if argon2 is not available
@@ -110,11 +111,7 @@ def create_access_token(
 
     # Encode token - in production use PyJWT with secret key
     # This is a placeholder for constitution-compliant JWT creation
-    token = (
-        base64.urlsafe_b64encode(json.dumps(payload).encode())
-        .decode()
-        .rstrip("=")
-    )
+    token = base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip("=")
 
     return token
 
@@ -143,6 +140,7 @@ def decode_access_token(token: str) -> dict | None:
 
 
 # Authorization per constitution Section 9.4 - RBAC least-privilege
+
 
 class PermissionError(Exception):
     """Raised when a user lacks required permission."""

@@ -62,8 +62,7 @@ def render_list_page(client: CustomerAPIClient) -> None:
             left, middle, right = st.columns([3, 2, 1])
             left.markdown(f"**{item['display_name']}**")
             left.caption(
-                f"{item['customer_type'].title()} · {item['status'].title()} · "
-                f"v{item['version']}"
+                f"{item['customer_type'].title()} · {item['status'].title()} · v{item['version']}"
             )
             middle.write("Eligible" if item["eligible"] else "Not eligible")
             if right.button("Open", key=f"open_{item['id']}"):

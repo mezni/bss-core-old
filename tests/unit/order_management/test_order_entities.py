@@ -1,13 +1,14 @@
 """Unit tests for order management domain entities."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
+
 from src.models.order_management.domain.entities import Order, OrderItem
 from src.models.order_management.domain.value_objects import OrderStatus
 
 
 def test_order_item_creation():
     """Test OrderItem can be created with valid data."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     item = OrderItem(
         id="item-001",
         description="Widget",
@@ -24,8 +25,9 @@ def test_order_item_creation():
 
 def test_order_item_validation_minimum_quantity():
     """Test OrderItem rejects quantity <= 0."""
-    from src.models.order_management.domain.entities import OrderItem
     from datetime import datetime, timezone
+
+    from src.models.order_management.domain.entities import OrderItem
     try:
         OrderItem(
             id="item-002",
@@ -33,7 +35,7 @@ def test_order_item_validation_minimum_quantity():
             quantity=0,
             unit_price=10.00,
             line_total=0.00,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         assert False, "Should have raised an error"
     except Exception:
@@ -42,8 +44,9 @@ def test_order_item_validation_minimum_quantity():
 
 def test_order_item_validation_max_price():
     """Test OrderItem rejects negative unit price."""
-    from src.models.order_management.domain.entities import OrderItem
     from datetime import datetime, timezone
+
+    from src.models.order_management.domain.entities import OrderItem
     try:
         OrderItem(
             id="item-003",
@@ -51,7 +54,7 @@ def test_order_item_validation_max_price():
             quantity=1,
             unit_price=-5.00,
             line_total=0.00,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         assert False, "Should have raised an error"
     except Exception:
@@ -60,7 +63,7 @@ def test_order_item_validation_max_price():
 
 def test_order_creation():
     """Test Order can be created with valid data."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     order = Order.create(
         customer_id="customer-001",
         items=[

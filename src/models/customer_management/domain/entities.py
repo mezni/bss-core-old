@@ -197,13 +197,9 @@ class Customer:
             if not self.legal_name:
                 raise InvalidCustomer("legal_name is required for business customers")
             if not self.registration_number:
-                raise InvalidCustomer(
-                    "registration_number is required for business customers"
-                )
+                raise InvalidCustomer("registration_number is required for business customers")
             try:
-                self.registration_number = normalize_registration_number(
-                    self.registration_number
-                )
+                self.registration_number = normalize_registration_number(self.registration_number)
             except ValueError as exc:
                 raise InvalidCustomer(str(exc)) from exc
             if self.email:

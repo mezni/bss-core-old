@@ -70,9 +70,7 @@ class CustomerService:
         )
         self._ensure_unique(customer)
         saved = self.repository.add(customer)
-        log_lifecycle(
-            "create", saved.id, status=saved.status.value, version=saved.version
-        )
+        log_lifecycle("create", saved.id, status=saved.status.value, version=saved.version)
         return customer_to_details(saved)
 
     def get(self, customer_id: str) -> CustomerDetailsDTO:
@@ -93,41 +91,31 @@ class CustomerService:
             customer.update(**changes)
         self._ensure_unique(customer, exclude_id=customer.id)
         saved = self.repository.update(customer, command.version)
-        log_lifecycle(
-            "update", saved.id, status=saved.status.value, version=saved.version
-        )
+        log_lifecycle("update", saved.id, status=saved.status.value, version=saved.version)
         return customer_to_details(saved)
 
     def change_type(self, command: ChangeCustomerTypeCommand) -> CustomerDetailsDTO:
         customer = self._get(command.customer_id)
         self._check_version(customer, command.version)
-        changes = {
-            key: value for key, value in command.changes.items() if key in _IDENTITY_FIELDS
-        }
+        changes = {key: value for key, value in command.changes.items() if key in _IDENTITY_FIELDS}
         customer.change_type(command.customer_type, **changes)
         self._ensure_unique(customer, exclude_id=customer.id)
         saved = self.repository.update(customer, command.version)
-        log_lifecycle(
-            "change_type", saved.id, status=saved.status.value, version=saved.version
-        )
+        log_lifecycle("change_type", saved.id, status=saved.status.value, version=saved.version)
         return customer_to_details(saved)
 
     def deactivate(self, command: DeactivateCustomerCommand) -> CustomerDetailsDTO:
         customer = self._get(command.customer_id)
         customer.deactivate()
         saved = self.repository.update(customer, customer.version)
-        log_lifecycle(
-            "deactivate", saved.id, status=saved.status.value, version=saved.version
-        )
+        log_lifecycle("deactivate", saved.id, status=saved.status.value, version=saved.version)
         return customer_to_details(saved)
 
     def reactivate(self, command: ReactivateCustomerCommand) -> CustomerDetailsDTO:
         customer = self._get(command.customer_id)
         customer.reactivate()
         saved = self.repository.update(customer, customer.version)
-        log_lifecycle(
-            "reactivate", saved.id, status=saved.status.value, version=saved.version
-        )
+        log_lifecycle("reactivate", saved.id, status=saved.status.value, version=saved.version)
         return customer_to_details(saved)
 
     def add_contact(self, command: AddContactCommand):
@@ -139,26 +127,18 @@ class CustomerService:
             is_primary=command.is_primary,
         )
         saved = self.repository.update(customer, customer.version)
-        log_lifecycle(
-            "add_contact", saved.id, status=saved.status.value, version=saved.version
-        )
+        log_lifecycle("add_contact", saved.id, status=saved.status.value, version=saved.version)
         saved_contact = next(item for item in saved.contacts if item.id == contact.id)
         return contact_to_dto(saved_contact, saved.id)
 
     def update_contact(self, command: UpdateContactCommand):
         customer = self._get(command.customer_id)
         self._check_version(customer, command.version)
-        changes = {
-            key: value for key, value in command.changes.items() if key in _CONTACT_FIELDS
-        }
+        changes = {key: value for key, value in command.changes.items() if key in _CONTACT_FIELDS}
         customer.update_contact(command.contact_id, **changes)
         saved = self.repository.update(customer, command.version)
-        log_lifecycle(
-            "update_contact", saved.id, status=saved.status.value, version=saved.version
-        )
-        saved_contact = next(
-            item for item in saved.contacts if item.id == command.contact_id
-        )
+        log_lifecycle("update_contact", saved.id, status=saved.status.value, version=saved.version)
+        saved_contact = next(item for item in saved.contacts if item.id == command.contact_id)
         return contact_to_dto(saved_contact, saved.id)
 
     def remove_contact(self, command: RemoveContactCommand) -> None:
@@ -166,9 +146,7 @@ class CustomerService:
         self._check_version(customer, command.version)
         customer.remove_contact(command.contact_id)
         saved = self.repository.update(customer, command.version)
-        log_lifecycle(
-            "remove_contact", saved.id, status=saved.status.value, version=saved.version
-        )
+        log_lifecycle("remove_contact", saved.id, status=saved.status.value, version=saved.version)
 
     def add_address(self, command: AddAddressCommand):
         customer = self._get(command.customer_id)
@@ -183,26 +161,18 @@ class CustomerService:
             is_primary=command.is_primary,
         )
         saved = self.repository.update(customer, customer.version)
-        log_lifecycle(
-            "add_address", saved.id, status=saved.status.value, version=saved.version
-        )
+        log_lifecycle("add_address", saved.id, status=saved.status.value, version=saved.version)
         saved_address = next(item for item in saved.addresses if item.id == address.id)
         return address_to_dto(saved_address, saved.id)
 
     def update_address(self, command: UpdateAddressCommand):
         customer = self._get(command.customer_id)
         self._check_version(customer, command.version)
-        changes = {
-            key: value for key, value in command.changes.items() if key in _ADDRESS_FIELDS
-        }
+        changes = {key: value for key, value in command.changes.items() if key in _ADDRESS_FIELDS}
         customer.update_address(command.address_id, **changes)
         saved = self.repository.update(customer, command.version)
-        log_lifecycle(
-            "update_address", saved.id, status=saved.status.value, version=saved.version
-        )
-        saved_address = next(
-            item for item in saved.addresses if item.id == command.address_id
-        )
+        log_lifecycle("update_address", saved.id, status=saved.status.value, version=saved.version)
+        saved_address = next(item for item in saved.addresses if item.id == command.address_id)
         return address_to_dto(saved_address, saved.id)
 
     def remove_address(self, command: RemoveAddressCommand) -> None:
@@ -210,9 +180,7 @@ class CustomerService:
         self._check_version(customer, command.version)
         customer.remove_address(command.address_id)
         saved = self.repository.update(customer, command.version)
-        log_lifecycle(
-            "remove_address", saved.id, status=saved.status.value, version=saved.version
-        )
+        log_lifecycle("remove_address", saved.id, status=saved.status.value, version=saved.version)
 
     def search(self, query: CustomerSearchQuery) -> CustomerListDTO:
         page = max(query.page, 1)
@@ -250,18 +218,14 @@ class CustomerService:
         if customer.version != expected_version:
             raise StaleUpdate(expected_version, customer.version)
 
-    def _ensure_unique(
-        self, customer: Customer, *, exclude_id: str | None = None
-    ) -> None:
+    def _ensure_unique(self, customer: Customer, *, exclude_id: str | None = None) -> None:
         if customer.customer_type == CustomerType.INDIVIDUAL:
             if self.repository.exists_identity(
                 CustomerType.INDIVIDUAL,
                 email=customer.email,
                 exclude_id=exclude_id,
             ):
-                raise DuplicateCustomer(
-                    "An individual customer with this email already exists"
-                )
+                raise DuplicateCustomer("An individual customer with this email already exists")
         else:
             if self.repository.exists_identity(
                 CustomerType.BUSINESS,

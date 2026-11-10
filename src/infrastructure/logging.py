@@ -2,9 +2,6 @@ from __future__ import annotations
 
 import logging
 import sys
-from pathlib import Path
-
-from src.infrastructure.db.config import DATABASE_URL
 
 
 def setup_logging(

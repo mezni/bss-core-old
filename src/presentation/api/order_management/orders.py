@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field, validator
 
 from src.application.services.order_service import OrderService
-from src.presentation.api.auth import get_current_user, create_access_token
+from src.domain.models import Customer
 from src.infrastructure.db import get_db
-from src.domain.models import Order, Customer
+from src.presentation.api.auth import get_current_user
 
 router = APIRouter(prefix="/api/v1/orders", tags=["orders"])
 
@@ -48,7 +48,7 @@ class OrderCreate(BaseModel):
 async def create_order(
     order_create: OrderCreate,
     current_user: Customer = Depends(get_current_user),
-    db = Depends(get_db),
+    db=Depends(get_db),
 ):
     """Create a new order in draft status.
 
@@ -61,11 +61,14 @@ async def create_order(
     order_service = OrderService()
     order = order_service.create_order(
         customer_id=order_create.customer_id,
-        items=[{
-            "description": item.description,
-            "quantity": item.quantity,
-            "unit_price": item.unit_price,
-        } for item in order_create.items],
+        items=[
+            {
+                "description": item.description,
+                "quantity": item.quantity,
+                "unit_price": item.unit_price,
+            }
+            for item in order_create.items
+        ],
         db_session=db,
     )
 
@@ -86,5 +89,7 @@ async def create_order(
                 "line_total": float(item.line_total) if item.line_total else 0.0,
             }
             for item in order.items
-        ] if hasattr(order, 'items') else [],
+        ]
+        if hasattr(order, "items")
+        else [],
     }

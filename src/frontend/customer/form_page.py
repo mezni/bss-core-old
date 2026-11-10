@@ -84,8 +84,7 @@ def render_edit_page(client: CustomerAPIClient, customer_id: str) -> None:
     st.header(customer["display_name"])
     st.caption(
         f"{customer['customer_type'].title()} · {customer['status'].title()} · "
-        f"v{customer['version']} · "
-        + ("eligible" if customer["eligible"] else "not eligible")
+        f"v{customer['version']} · " + ("eligible" if customer["eligible"] else "not eligible")
     )
 
     if customer["status"] == "ACTIVE":
@@ -142,9 +141,7 @@ def _render_contacts(client: CustomerAPIClient, customer: dict[str, Any]) -> Non
         st.caption("No contacts yet. At least one contact is required for eligibility.")
 
     for contact in customer["contacts"]:
-        with st.expander(
-            f"{contact['name']} · {contact['contact_type']} · {contact['value']}"
-        ):
+        with st.expander(f"{contact['name']} · {contact['contact_type']} · {contact['value']}"):
             with st.form(f"edit_contact_{contact['id']}"):
                 name = st.text_input("Name", value=contact["name"])
                 contact_type = st.selectbox(
@@ -173,9 +170,7 @@ def _render_contacts(client: CustomerAPIClient, customer: dict[str, Any]) -> Non
                         st.rerun()
             if st.button("Delete contact", key=f"delete_contact_{contact['id']}"):
                 try:
-                    client.remove_contact(
-                        customer["id"], contact["id"], customer["version"]
-                    )
+                    client.remove_contact(customer["id"], contact["id"], customer["version"])
                 except CustomerAPIError as error:
                     _show_error(error)
                 else:
@@ -183,13 +178,9 @@ def _render_contacts(client: CustomerAPIClient, customer: dict[str, Any]) -> Non
 
     with st.form(f"add_contact_{customer['id']}"):
         name = st.text_input("Name", key=f"new_contact_name_{customer['id']}")
-        contact_type = st.selectbox(
-            "Type", CONTACT_TYPES, key=f"new_contact_type_{customer['id']}"
-        )
+        contact_type = st.selectbox("Type", CONTACT_TYPES, key=f"new_contact_type_{customer['id']}")
         value = st.text_input("Value", key=f"new_contact_value_{customer['id']}")
-        is_primary = st.checkbox(
-            "Primary", key=f"new_contact_primary_{customer['id']}"
-        )
+        is_primary = st.checkbox("Primary", key=f"new_contact_primary_{customer['id']}")
         if st.form_submit_button("Add contact"):
             try:
                 client.add_contact(
@@ -248,9 +239,7 @@ def _render_addresses(client: CustomerAPIClient, customer: dict[str, Any]) -> No
                         st.rerun()
             if st.button("Delete address", key=f"delete_address_{address['id']}"):
                 try:
-                    client.remove_address(
-                        customer["id"], address["id"], customer["version"]
-                    )
+                    client.remove_address(customer["id"], address["id"], customer["version"])
                 except CustomerAPIError as error:
                     _show_error(error)
                 else:
@@ -262,15 +251,11 @@ def _render_addresses(client: CustomerAPIClient, customer: dict[str, Any]) -> No
         line2 = st.text_input("Line 2", key=f"new_address_line2_{customer['id']}")
         city = st.text_input("City", key=f"new_address_city_{customer['id']}")
         region = st.text_input("Region", key=f"new_address_region_{customer['id']}")
-        postal_code = st.text_input(
-            "Postal code", key=f"new_address_postal_{customer['id']}"
-        )
+        postal_code = st.text_input("Postal code", key=f"new_address_postal_{customer['id']}")
         country = st.text_input(
             "Country (ISO-2)", value="US", key=f"new_address_country_{customer['id']}"
         )
-        is_primary = st.checkbox(
-            "Primary", key=f"new_address_primary_{customer['id']}"
-        )
+        is_primary = st.checkbox("Primary", key=f"new_address_primary_{customer['id']}")
         if st.form_submit_button("Add address"):
             try:
                 client.add_address(

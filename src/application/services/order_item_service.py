@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from src.domain.models import Order, OrderItem, Customer
+from src.domain.models import Order, OrderItem
 
 
 class OrderItemService:
@@ -53,7 +53,9 @@ class OrderItemService:
 
         return order_item
 
-    def modify_item(self, item_id: str, new_quantity: int, new_unit_price: Decimal, db_session) -> Order:
+    def modify_item(
+        self, item_id: str, new_quantity: int, new_unit_price: Decimal, db_session
+    ) -> Order:
         """Modify an existing order item and recalculate total."""
         if new_quantity < 1:
             raise ValueError("Quantity must be at least 1")
@@ -67,7 +69,7 @@ class OrderItemService:
 
         old_line_total = order_item.line_total
         new_line_total = new_quantity * new_unit_price
-        difference = new_line_total - old_line_total
+        new_line_total - old_line_total
 
         order_item.quantity = new_quantity
         order_item.unit_price = new_unit_price

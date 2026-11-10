@@ -22,9 +22,7 @@ _HTTP_CODES = {
 }
 
 
-def error_payload(
-    code: str, message: str, details: dict[str, Any] | None = None
-) -> dict[str, Any]:
+def error_payload(code: str, message: str, details: dict[str, Any] | None = None) -> dict[str, Any]:
     """Build the shared error envelope."""
     return {
         "error": {
@@ -35,18 +33,14 @@ def error_payload(
     }
 
 
-async def domain_error_handler(
-    request: Request, exc: CustomerDomainError
-) -> JSONResponse:
+async def domain_error_handler(request: Request, exc: CustomerDomainError) -> JSONResponse:
     return JSONResponse(
         status_code=exc.http_status,
         content=error_payload(exc.code, exc.message, exc.details),
     )
 
 
-async def http_error_handler(
-    request: Request, exc: StarletteHTTPException
-) -> JSONResponse:
+async def http_error_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
     code = _HTTP_CODES.get(exc.status_code, "HTTP_ERROR")
     message = exc.detail if isinstance(exc.detail, str) else "Request failed"
     headers = getattr(exc, "headers", None)
@@ -57,9 +51,7 @@ async def http_error_handler(
     )
 
 
-async def validation_error_handler(
-    request: Request, exc: RequestValidationError
-) -> JSONResponse:
+async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
     return JSONResponse(
         status_code=400,
         content=error_payload(

@@ -8,7 +8,6 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-
 MARKDOWN_IMAGE = re.compile(r"!\[[^\]]*\]\(([^)\s]+)(?:\s+[^)]*)?\)")
 HTML_IMAGE = re.compile(r"<img\b[^>]*\bsrc=[\"']([^\"']+)[\"'][^>]*>", re.I)
 HTML_ALT = re.compile(r"\balt=[\"']([^\"']*)[\"']", re.I)

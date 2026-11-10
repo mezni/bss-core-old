@@ -1,9 +1,7 @@
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
 from alembic import context
+from sqlalchemy import engine_from_config, pool
 
 from src.domain.database import SQLALCHEMY_DATABASE_URL
 from src.models.customer_management.infrastructure.orm import Base

@@ -32,9 +32,7 @@ st.set_page_config(
 
 def _on_navigation_change() -> None:
     selection = st.session_state.get("navigation")
-    st.session_state["customer_view"] = (
-        "create" if selection == "New Customer" else "list"
-    )
+    st.session_state["customer_view"] = "create" if selection == "New Customer" else "list"
 
 
 def check_backend_health() -> bool:

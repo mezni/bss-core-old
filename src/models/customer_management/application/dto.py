@@ -138,9 +138,7 @@ def customer_to_details(customer: Customer) -> CustomerDetailsDTO:
         eligible=customer.eligible,
         version=customer.version,
         contacts=tuple(contact_to_dto(contact, customer.id) for contact in customer.contacts),
-        addresses=tuple(
-            address_to_dto(address, customer.id) for address in customer.addresses
-        ),
+        addresses=tuple(address_to_dto(address, customer.id) for address in customer.addresses),
         created_at=customer.created_at,
         updated_at=customer.updated_at,
     )

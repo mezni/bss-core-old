@@ -106,9 +106,7 @@ class CustomerAPIClient:
     def create_customer(self, payload: dict[str, Any]) -> dict[str, Any]:
         return self._json("POST", "/api/v1/customers", json=payload)
 
-    def update_customer(
-        self, customer_id: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def update_customer(self, customer_id: str, payload: dict[str, Any]) -> dict[str, Any]:
         return self._json("PATCH", f"/api/v1/customers/{customer_id}", json=payload)
 
     def deactivate_customer(self, customer_id: str) -> dict[str, Any]:
@@ -120,12 +118,8 @@ class CustomerAPIClient:
     def get_eligibility(self, customer_id: str) -> dict[str, Any]:
         return self._json("GET", f"/api/v1/customers/{customer_id}/eligibility")
 
-    def add_contact(
-        self, customer_id: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
-        return self._json(
-            "POST", f"/api/v1/customers/{customer_id}/contacts", json=payload
-        )
+    def add_contact(self, customer_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+        return self._json("POST", f"/api/v1/customers/{customer_id}/contacts", json=payload)
 
     def update_contact(
         self, customer_id: str, contact_id: str, payload: dict[str, Any]
@@ -136,21 +130,15 @@ class CustomerAPIClient:
             json=payload,
         )
 
-    def remove_contact(
-        self, customer_id: str, contact_id: str, version: int
-    ) -> None:
+    def remove_contact(self, customer_id: str, contact_id: str, version: int) -> None:
         self._json(
             "DELETE",
             f"/api/v1/customers/{customer_id}/contacts/{contact_id}",
             json={"version": version},
         )
 
-    def add_address(
-        self, customer_id: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
-        return self._json(
-            "POST", f"/api/v1/customers/{customer_id}/addresses", json=payload
-        )
+    def add_address(self, customer_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+        return self._json("POST", f"/api/v1/customers/{customer_id}/addresses", json=payload)
 
     def update_address(
         self, customer_id: str, address_id: str, payload: dict[str, Any]
@@ -161,9 +149,7 @@ class CustomerAPIClient:
             json=payload,
         )
 
-    def remove_address(
-        self, customer_id: str, address_id: str, version: int
-    ) -> None:
+    def remove_address(self, customer_id: str, address_id: str, version: int) -> None:
         self._json(
             "DELETE",
             f"/api/v1/customers/{customer_id}/addresses/{address_id}",

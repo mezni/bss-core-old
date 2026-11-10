@@ -119,9 +119,7 @@ def update_customer(
 ) -> CustomerResponse:
     changes = payload.model_dump(exclude_unset=True)
     version = int(changes.pop("version"))
-    command = UpdateCustomerCommand(
-        customer_id=customer_id, version=version, changes=changes
-    )
+    command = UpdateCustomerCommand(customer_id=customer_id, version=version, changes=changes)
     return _details(service.update(command))
 
 

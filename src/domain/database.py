@@ -12,9 +12,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 # SQLite configuration - initial database per constitution technology standards.
 # BSS_DATABASE_URL allows tests and migration checks to target a clean database.
-SQLALCHEMY_DATABASE_URL = os.environ.get(
-    "BSS_DATABASE_URL", "sqlite:///./db/bss_core.db"
-)
+SQLALCHEMY_DATABASE_URL = os.environ.get("BSS_DATABASE_URL", "sqlite:///./db/bss_core.db")
 
 # Engine configuration with connection pooling and thread safety
 engine = create_engine(
