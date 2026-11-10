@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, validator
 
 class OrderItemCreate(BaseModel):
     """Schema for creating an order item."""
+
     description: str = Field(min_length=1, description="Item description")
     quantity: float = Field(gt=0, description="Item quantity")
     unit_price: float = Field(ge=0, description="Unit price")
@@ -23,10 +24,10 @@ class OrderItemCreate(BaseModel):
 
 class OrderCreate(BaseModel):
     """Schema for creating an order."""
+
     customer_id: str = Field(..., description="Customer ID")
     items: list[OrderItemCreate] = Field(
-        min_length=1,
-        description="At least one order item required",
+        description="Order items array",
     )
 
     @validator("items")
@@ -39,6 +40,7 @@ class OrderCreate(BaseModel):
 
 class OrderResponse(BaseModel):
     """Schema for order creation response."""
+
     id: str = Field(..., description="Order ID")
     status: str = Field(default="draft", description="Order status")
     subtotal: float = Field(..., description="Order subtotal")
@@ -49,5 +51,6 @@ class OrderResponse(BaseModel):
 
 class OrderStatusUpdate(BaseModel):
     """Schema for updating order status."""
+
     status: str = Field(..., description="Target status")
     version: int = Field(..., ge=1, description="Current version for optimistic concurrency")

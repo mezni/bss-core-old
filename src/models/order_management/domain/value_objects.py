@@ -8,6 +8,7 @@ from enum import StrEnum
 
 class OrderStatus(StrEnum):
     """Order lifecycle status transitions."""
+
     DRAFT = "draft"
     CONFIRMED = "confirmed"
     SHIPPED = "shipped"
@@ -18,6 +19,7 @@ class OrderStatus(StrEnum):
 @dataclass(frozen=True, slots=True)
 class Money:
     """A monetary value with 2 decimal precision."""
+
     amount: float
     currency: str = "USD"
 

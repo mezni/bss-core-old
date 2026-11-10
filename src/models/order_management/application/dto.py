@@ -11,6 +11,7 @@ from ..domain.entities import Order, OrderItem
 @dataclass(frozen=True)
 class OrderItemDTO:
     """Data transfer object for an order item."""
+
     id: str
     description: str
     quantity: float
@@ -31,6 +32,7 @@ class OrderItemDTO:
 @dataclass(frozen=True)
 class OrderDTO:
     """Data transfer object for an order."""
+
     id: str
     status: str
     subtotal: float
@@ -44,9 +46,7 @@ class OrderDTO:
 
     @staticmethod
     def from_domain(order: Order) -> OrderDTO:
-        items_dto = tuple(
-            OrderItemDTO.from_domain(item) for item in order.items
-        )
+        items_dto = tuple(OrderItemDTO.from_domain(item) for item in order.items)
         return OrderDTO(
             id=order.id,
             status=order.status.value,

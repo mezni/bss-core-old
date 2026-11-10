@@ -34,9 +34,7 @@ class OrderItemORM(Base):
 
     order: Mapped[OrderORM] = relationship(back_populates="items")
 
-    __table_args__ = (
-        Index("ix_order_items_order", "order_id"),
-    )
+    __table_args__ = (Index("ix_order_items_order", "order_id"),)
 
 
 class OrderORM(Base):

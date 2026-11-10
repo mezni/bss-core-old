@@ -25,10 +25,39 @@ def create_order(
     """Create a new order with at least one item."""
     service = get_order_service()
     try:
-        order_dto = service.create(customer_id=order_create.customer_id, items=order_create.items)
+        order = service.create(customer_id=order_create.customer_id, items=order_create.items)
+        # Convert Order domain model to OrderDTO dict
+        items_data = [
+            {
+                "id": str(item.id),
+                "description": item.description,
+                "quantity": item.quantity,
+                "unit_price": float(item.unit_price),
+                "line_total": float(item.line_total),
+            }
+            for item in order.items
+        ]
+        tax_amount = order.subtotal * 0.10  # 10% fixed tax rate for S03 MVP
+        total = order.subtotal + tax_amount
+        order_dto = {
+            "id": order.id,
+            "status": order.status,
+            "subtotal": float(order.subtotal),
+            "tax_amount": float(tax_amount),
+            "total": float(total),
+            "version": order.version,
+            "customer_id": order.customer_id,
+            "created_at": order.created_at.isoformat() if order.created_at else None,
+            "updated_at": order.updated_at.isoformat() if order.updated_at else None,
+            "items": items_data,
+        }
         return order_dto
     except InvalidOrder as e:
         raise HTTPException(status_code=400, detail=e.message) from None
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from None
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from None
 
 
 @router.get("/{order_id}", summary="Get order by ID")

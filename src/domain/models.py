@@ -1,19 +1,20 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
-from decimal import Decimal
+from datetime import UTC, datetime
 
 from sqlalchemy import (
     Boolean,
+    Column,
     DateTime,
-    Enum as SqlEnum,
     ForeignKey,
     Integer,
     Numeric,
     String,
     Text,
-    Column,
+)
+from sqlalchemy import (
+    Enum as SqlEnum,
 )
 from sqlalchemy.orm import DeclarativeBase
 
@@ -31,8 +32,11 @@ class Order(Base):
     __tablename__ = "order"
 
     id = Column(
-        String(36), primary_key=True, unique=True, nullable=False,
-        default=lambda: f"ORD-{str(uuid.uuid4())}"
+        String(36),
+        primary_key=True,
+        unique=True,
+        nullable=False,
+        default=lambda: f"ORD-{str(uuid.uuid4())}",
     )  # UUID v4 format ORD-...
     status = Column(
         SqlEnum("draft", "confirmed", "shipped", "delivered", "cancelled", name="order_status"),
@@ -43,12 +47,12 @@ class Order(Base):
     tax_amount = Column(Numeric(10, 2), nullable=False, default="0.00")
     total = Column(Numeric(10, 2), nullable=False, default="0.00")
     customer_id = Column(Integer, ForeignKey("customer.id"), nullable=False)
-    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
     updated_at = Column(
         DateTime,
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
     def __repr__(self) -> str:
@@ -80,12 +84,12 @@ class Customer(Base):
     type = Column(String(20), nullable=False)
     contact_info = Column(Text, nullable=True)
     eligibility_status = Column(Boolean, nullable=False, default=False)
-    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
     updated_at = Column(
         DateTime,
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
     def __repr__(self) -> str:

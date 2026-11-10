@@ -79,21 +79,21 @@ class Order:
         items = items or []
         if len(items) == 0:
             raise InvalidOrder("At least one order item is required to create an order")
-        
+
         order_items: list[OrderItem] = []
         subtotal = 0.0
         for item_data in items:
             description = item_data.get("description", "").strip()
             quantity = float(item_data.get("quantity", 1))
             unit_price = float(item_data.get("unit_price", 0))
-            
+
             if not description:
                 raise OrderItemError("Item description is required")
             if quantity <= 0:
                 raise OrderItemError("Quantity must be greater than zero")
             if unit_price < 0:
                 raise OrderItemError("Unit price must be non-negative")
-            
+
             line_total = round(quantity * unit_price, 2)
             item = OrderItem(
                 id=str(uuid4()),
@@ -106,11 +106,11 @@ class Order:
             )
             order_items.append(item)
             subtotal += line_total
-        
+
         tax_rate = 0.10  # S03 MVP fixed tax rate
         tax_amount = round(subtotal * tax_rate, 2)
         total = round(subtotal + tax_amount, 2)
-        
+
         return cls(
             id=order_id,
             status=OrderStatus.DRAFT,

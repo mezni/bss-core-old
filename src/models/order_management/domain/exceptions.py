@@ -7,6 +7,7 @@ from typing import Any
 
 class OrderDomainError(Exception):
     """Base class for order domain errors with a stable error code."""
+
     code = "ORDER_ERROR"
     http_status = 400
 

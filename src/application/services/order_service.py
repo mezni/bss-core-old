@@ -5,6 +5,8 @@ from decimal import Decimal
 
 from src.domain.models import Order, OrderItem, Customer
 
+TAX_RATE = Decimal("0.10")  # 10% fixed tax rate for S03 MVP
+
 
 class OrderService:
     """Domain-layer use case: create order with customer validation, item count check, draft status assignment."""
@@ -31,10 +33,6 @@ class OrderService:
         if not customer.eligibility_status:
             raise ValueError(f"Customer {customer_id} is not eligible for order creation")
 
-        # Validate at least one item
-        if not items or len(items) == 0:
-            raise ValueError("At least one order item is required")
-
         # Calculate subtotal
         subtotal = Decimal("0")
 
@@ -52,13 +50,17 @@ class OrderService:
             line_total = quantity * unit_price
             subtotal += line_total
 
+        # Calculate tax using fixed rate (10% for S03 MVP)
+        tax_amount = subtotal * TAX_RATE
+        total = subtotal + tax_amount
+
         # Create order in draft status with UUID v4
         order = Order(
             id=f"ORD-{str(uuid.uuid4())}",
             status="draft",
             subtotal=subtotal,
-            tax_amount=Decimal("0"),
-            total=subtotal,
+            tax_amount=tax_amount,
+            total=total,
             customer_id=customer_id,
         )
 
