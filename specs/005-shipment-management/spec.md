@@ -1,127 +1,133 @@
-# Feature Specification: Shipment Management
+# Feature Specification: Shipment Management (S04)
 
-**Feature Branch**: `[feature-shipment-management]`
+**Feature Branch**: `004-feature-shipment-management`
 
 **Created**: 2026-11-10
 
 **Status**: Draft
 
-**Input**: User description: "from docs/sprint-planning.md s04 - Shipment Management: Implement shipment creation and delivery tracking"
+**Input**: User description: "from docs/sprint-planning.md s04"
 
 ## User Scenarios & Testing *(mandatory)*
 
-<!--
-  IMPORTANT: User stories should be PRIORITIZED as user journeys ordered by importance.
-  Each user story/journey must be INDEPENDENTLY TESTABLE - meaning if you implement just ONE of them,
-  you should still have a viable MVP (Minimum Viable Product) that delivers value.
-
-  Assign priorities (P1, P2, P3, etc.) to each story, where P1 is the most critical.
-  Think of each story as a standalone slice of functionality that can be:
-  - Developed independently
-  - Tested independently
-  - Deployed independently
-  - Demonstrated to users independently
--->
-
 ### User Story 1 - Create Shipment (Priority: P1)
+**Describe this user journey in plain language**:  
+An authenticated user can create a new shipment record for an order, initiating the delivery process. The shipment starts in a pending status and carries tracking information.
 
-As a business operator, I want to create a shipment record for a customer order so that I can track the delivery process.
+**Why this priority**:  
+This is the foundational shipment flow — without the ability to create shipments, no subsequent delivery lifecycle actions are possible. It delivers immediate business value by enabling the core logistics operation.
 
-**Why this priority**: This is the foundational operation — all other shipment functions depend on being able to create a shipment record first.
-
-**Independent Test**: Can be fully tested by creating a shipment for a valid order and verifying the shipment is persisted with a unique tracking identifier and initial status.
+**Independent Test**:  
+Can be fully tested by creating a shipment for a confirmed order, verifying the shipment is assigned an ID, status is set to pending, and tracking information is captured. The test succeeds even if no other shipment flows are exercised.
 
 **Acceptance Scenarios**:
-1. **Given** a customer order exists, **When** a shipment is created for that order, **Then** the shipment is stored with a reference to the order, a unique tracking identifier, and an initial "pending" status.
-2. **Given** an invalid order reference is provided, **When** attempting to create a shipment, **Then** the system rejects the request and returns an error.
+1. **Given** a confirmed order exists, **When** a new shipment is created, **Then** the shipment is assigned a unique identifier, status is set to pending, and tracking reference is generated.
+2. **Given** an order cannot be shipped (e.g., not confirmed), **When** an attempt is made to create a shipment, **Then** the request is rejected with an appropriate error.
 
 ---
 
-### User Story 2 - Update Shipment Status (Priority: P2)
+### User Story 2 - Update Shipment (Priority: P2)
+**Describe this user journey in plain language**:  
+An authenticated user can update shipment information such as carrier, tracking number, or status. This allows the logistics team to correct or update shipment details as needed.
 
-As a business operator, I want to update the status of a shipment as it progresses through the delivery lifecycle so that I can track its current state.
+**Why this priority**:  
+Shipment details may need correction during processing (e.g., wrong carrier selected, tracking number typo). This flow ensures data accuracy without requiring creation of a new shipment.
 
-**Why this priority**: Status updates are needed for delivery tracking but can wait until after basic shipment creation is verified.
-
-**Independent Test**: Can be fully tested by creating a shipment and then updating its status to "in-transit" or "delivered" and verifying the status change is persisted.
+**Independent Test**:  
+Can be fully tested by creating a shipment, updating its carrier and tracking number, and verifying the updated information is reflected in the shipment response. The test passes regardless of subsequent status changes.
 
 **Acceptance Scenarios**:
-1. **Given** a shipment with "pending" status, **When** the status is updated to "in-transit", **Then** the shipment's status reflects "in-transit" and a timestamp is recorded.
-2. **Given** a shipment with "in-transit" status, **When** the status is updated to "delivered", **Then** the shipment's status reflects "delivered" with a delivery date.
+1. **Given** a shipment in pending status, **When** carrier and tracking number are updated, **Then** the shipment reflects the new carrier and tracking information.
+2. **Given** a shipment in in-transit status, **When** an attempt is made to update the order reference, **Then** the update is rejected with a clear error indicating the shipment is locked.
 
 ---
 
 ### User Story 3 - Confirm Delivery (Priority: P3)
+**Describe this user journey in plain language**:  
+An authenticated user can confirm that an order has been delivered, updating the shipment status to delivered and closing the delivery lifecycle.
 
-As a business operator, I want to confirm delivery of a shipment so that the delivery process is marked complete and the order is finalized.
+**Why this priority**:  
+Business operations need to track delivery completion. Clear delivery boundaries enable downstream processes (e.g., billing, feedback requests, order archival).
 
-**Why this priority**: Delivery confirmation is important but is a downstream operation after basic creation and status tracking are verified.
-
-**Independent Test**: Can be fully tested by creating a shipment, updating its status to "in-transit", and then confirming delivery with a delivery date, verifying the status becomes "delivered".
+**Independent Test**:  
+Can be fully tested by creating a shipment, updating its status to in-transit, confirming delivery, and verifying the shipment status changes to delivered. The test validates the boundary rules without requiring the full billing workflow.
 
 **Acceptance Scenarios**:
-1. **Given** a shipment with "in-transit" status, **When** delivery is confirmed with a delivery date, **Then** the shipment status becomes "delivered" and the delivery date is recorded.
+1. **Given** a shipment in in-transit status, **When** delivery is confirmed, **Then** the status changes to delivered and a delivery timestamp is recorded.
+2. **Given** a shipment delivered, **When** an attempt is made to confirm delivery again, **Then** the request is rejected with an appropriate error indicating delivery already confirmed.
 
 ---
 
 ### Edge Cases
 
-<!--
-  ACTION REQUIRED: The content in this section represents placeholders.
-  Fill them out with the right edge cases.
--->
-
-- What happens when an invalid shipment ID is provided for status update?
-- How does the system handle duplicate tracking identifiers?
+- What happens when a shipment is created for a non-confirmed order? → System rejects with error indicating order must be confirmed first
+- How does system handle lost tracking information? → System allows updating tracking reference; original tracking is preserved in history
+- What occurs when delivery is confirmed for an already-delivered shipment? → System rejects with error indicating delivery already confirmed
 
 ## Requirements *(mandatory)*
 
-<!--
-  ACTION REQUIRED: The content in this section represents placeholders.
-  Fill them out with the right functional requirements.
--->
-
 ### Functional Requirements
 
-- **FR-001**: System MUST allow creation of a shipment record linked to a customer order
-- **FR-002**: System MUST generate a unique tracking identifier for each shipment
-- **FR-003**: System MUST support status transitions for shipment lifecycle (pending → in-transit → delivered)
-- **FR-004**: System MUST require delivery confirmation with a delivery date before marking a shipment as delivered
-- **FR-005**: System MUST reject invalid status transitions (e.g., cannot move from delivered back to in-transit)
-- **FR-006**: System MUST provide API endpoints for shipment retrieval and status lookup
-- **FR-007**: System MUST associate each shipment with a valid, eligible customer order
+- **FR-001**: System MUST allow an authenticated user to create a new shipment for a confirmed order
+- **FR-002**: System MUST require an order to be in confirmed status before a shipment can be created
+- **FR-003**: System MUST calculate and assign a tracking reference number on shipment creation
+- **FR-004**: System MUST allow updating shipment carrier and tracking number while in pending status
+- **FR-005**: System MUST enforce valid status transitions: pending → in-transit → delivered
+- **FR-006**: System MUST reject invalid status transitions with a clear error message
+- **FR-007**: System MUST associate every shipment with a valid, confirmed order and ensure shipments belong only to confirmed orders
+- **FR-008**: System MUST expose shipment creation and management through REST API endpoints under `/api/v1/shipments`:
+  - `POST /api/v1/shipments` (create)
+  - `GET /api/v1/shipments` (list with pagination and filtering)
+  - `GET /api/v1/shipments/{shipment_id}` (retrieve)
+  - `PATCH /api/v1/shipments/{shipment_id}` (update)
 
-### Key Entities *(include if feature involves data)*
+## Key Entities *(include if feature involves data)*
 
-- **Shipment**: Represents a physical delivery record; key attributes include tracking identifier, current status, associated order reference, and delivery date. Shipment exists to track the physical delivery process associated with customer orders.
-- **Order**: Customer order that a shipment references; ensures shipments are only created for valid, existing orders.
+- **Shipment**: Represents a delivery request for an order. Key attributes: unique identifier (UUID v4 format: SHIP-550e8400-e29b-41d4-a716-446655440000), status (pending, in-transit, delivered, exception), tracking reference, carrier name, order reference, creation timestamp, delivery timestamp.  
+  *Responsibility*: Owns its business invariants (valid status transitions, tracking reference requirements); enforces status transition preconditions in the domain layer; documents required checks (order confirmation status, sequence order); delivery confirmation is terminal; shipment status progresses: pending → in-transit → delivered
+
+- **Order**: Represents a customer's purchase request. Each order can have associated shipments that track delivery progress. One order can have multiple shipments (e.g., split shipments); each shipment belongs to exactly one order.
 
 ## Success Criteria *(mandatory)*
 
-<!--
-  ACTION REQUIRED: Define measurable success criteria.
-  These must be technology-agnostic and measurable.
--->
-
 ### Measurable Outcomes
 
-- **SC-001**: Users can create a shipment for a valid customer order in under 2 minutes
-- **SC-002**: Each shipment receives a unique tracking identifier with no collisions across 10,000 shipments
-- **SC-003**: Shipment status transitions follow the lifecycle: pending → in-transit → delivered
-- **SC-004**: 95% of delivery confirmations include a valid delivery date
-- **SC-005**: Invalid status transitions are rejected with a clear error message
+- **SC-001**: A customer can create a shipment for a confirmed order in under 2 minutes from the order management interface.
+- **SC-002**: A shipment cannot be created for an order that is not in confirmed status; the system rejects the creation request with a clear error.
+- **SC-003**: Shipment tracking reference is generated on creation and follows format: SHIP-[UUID v4 substring].
+- **SC-004**: Status transitions follow the defined sequence: pending → in-transit → delivered; invalid transitions are rejected at least 95% of the time in automated testing.
+- **SC-005**: Every shipment is associated with a confirmed order that passes eligibility validation; shipments for non-confirmed orders are rejected.
+- **SC-006**: Shipment carrier and tracking information can be updated while shipment is in pending status.
+- **SC-007**: Shipment API create and list operations respond in under 200ms (aligned with S03 Order Management performance goals).
+
+### Qualitative Measures
+
+- Users can understand shipment status at a glance without needing to interpret internal codes.
+- Error messages for invalid operations are descriptive and actionable.
+- The shipment lifecycle is consistent across API and frontend interface.
+- Delivery confirmation properly closes the shipment lifecycle.
 
 ## Assumptions
 
-<!--
-  ACTION REQUIRED: The content in this section represents placeholders.
-  Fill them out with the right assumptions based on reasonable defaults
-  chosen when the feature description did not specify certain details.
--->
+- **Existing order management (S03) provides confirmed orders for shipment creation.**
+- **Customers must have at least one confirmed order to be eligible for shipment creation.**
+- **Tracking reference is generated automatically on shipment creation; carrier and tracking number can be updated during pending status.**
+- **Delivery confirmation is terminal; shipments in delivered status cannot be modified.**
+- **S03 Order Management tax calculation applies; no additional shipment-specific pricing is required for S03 MVP.**
+- **Shipments reference orders by identifier; no duplicate order data is stored in shipment records.**
+- **Split shipments are out of scope for S04 MVP (single shipment per order).**
+- **Shipment data import/export uses JSON format for API operations; CSV format supported for bulk import with column mapping to shipment attributes (S05 logistics integration will extend formats).**
+- **Data volume assumption: 100-500 shipments/day, supporting <10,000 active shipments with ~20% monthly growth (aligned with S03 Order Management capacity).**
+- **Reliability target: 99.9% uptime for core shipment operations; structured JSON logging for all state transitions and critical API errors (aligned with BSS-Core constitution Section 11).**
 
-- Users creating shipments have access to valid, existing customer orders
-- Delivery timelines are managed outside the system; the system tracks status but not actual transit time
-- Shipment tracking identifiers follow a format that guarantees uniqueness within the system's expected volume
-- Orders can be in states that allow shipment creation (e.g., not cancelled or completed)
-- The system integrates with the existing customer order management module
-- Delivery confirmation requires a date; time-of-day is not tracked for v1
+## Dependencies
+
+- **S03 Order Management**: Must be fully implemented and tested; shipments reference orders from the S03 module; shipment creation requires order to be in confirmed status.
+- **S01 Identity & Access**: JWT authentication and permission checks must be available for shipment API endpoints; shipment endpoints use `customer:manage` for write and `customer:view` for read operations.
+
+## Notes
+
+- This specification focuses on the business problem and requirements. Implementation details will be addressed in technical planning and development tasks.
+- The order-shipment eligibility check (FR-007) draws from the S03 order status port and does not duplicate business rules.
+- Status transition boundaries are designed to be strict; the system enforces these boundaries without exposing internal implementation details.
+- Shipment history tracking (S04-09, S04-13) records status changes for audit purposes.

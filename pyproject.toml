@@ -20,6 +20,7 @@ dependencies = [
     "sqlalchemy>=2.1.8",
     "starlette>=1.10.0",
     "streamlit>=1.67.0",
+    "uvicorn[standard]>=0.54.0",
     "uvloop>=0.23.0",
 ]
 
@@ -49,3 +50,8 @@ select = ["E", "F", "I", "UP", "B"]
 "src/models/customer_management/presentation/*" = ["F401"]
 "src/models/customer_management/api/*" = ["B008"]
 "src/frontend/customer/*" = ["E402"]
+
+[tool.uv.workspace]
+members = [
+    "src/shipment",
+]
