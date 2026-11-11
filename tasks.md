@@ -64,8 +64,8 @@ description: "Task list template for feature implementation"
 - [x] T007 Create base models/entities that all stories depend on: Invoice, Payment, Order models
 - [x] T008 Configure error handling and logging infrastructure with structured JSON logging
 - [x] T009 Setup environment configuration management
-- [ ] T036 [P] [US1] Implement API response time validation for invoice creation endpoint (target: ≤200ms per SC-007)
-- [ ] T037 [P] [US1] Implement API response time validation for invoice list endpoint (target: ≤200ms per SC-007)
+[x] T036 [P] [US1] Implement API response time validation for invoice creation endpoint (target: ≤200ms per SC-007)
+[x] T037 [P] [US1] Implement API response time validation for invoice list endpoint (target: ≤200ms per SC-007)
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -81,18 +81,18 @@ description: "Task list template for feature implementation"
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T010 [P] [US1] Contract test for create invoice endpoint in tests/contract/test_invoice_create.py
-- [ ] T011 [P] [US1] Integration test for generate invoice user journey in tests/integration/test_invoice_create.py
+[x] T010 [P] [US1] Contract test for create invoice endpoint in tests/contract/test_invoice_create.py
+[x] T011 [P] [US1] Integration test for generate invoice user journey in tests/integration/test_invoice_create.py
 
 ### Implementation for User Story 1
 
-- [ ] T012 [P] [US1] Create Invoice model in src/models/invoice.py
-- [ ] T013 [P] [US1] Create Payment model in src/models/payment.py
-- [ ] T014 [US1] Implement InvoiceService in src/services/invoice_service.py (depends on T012, T013)
-- [ ] T015 [US1] Implement invoice creation endpoint in src/presentation/api/invoice_endpoints.py
-- [ ] T016 [US1] Add validation and error handling for FR-001, FR-002, FR-003
-- [ ] T017 [US1] Add logging for invoice creation operations
-- [ ] T035 [P] [US1] Implement pagination parameters (page, page_size) for list invoices GET /api/v1/invoices in src/presentation/api/invoice_endpoints.py
+[x] T012 [P] [US1] Create Invoice model in src/models/invoice.py
+[x] T013 [P] [US1] Create Payment model in src/models/payment.py
+[x] T014 [US1] Implement InvoiceService in src/services/invoice_service.py (depends on T012, T013)
+[x] T015 [US1] Implement invoice creation endpoint in src/presentation/api/invoice_endpoints.py
+[x] T016 [US1] Add validation and error handling for FR-001, FR-002, FR-003
+[x] T017 [US1] Add logging for invoice creation operations
+[x] T035 [P] [US1] Implement pagination parameters (page, page_size) for list invoices GET /api/v1/invoices in src/presentation/api/invoice_endpoints.py
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
@@ -108,15 +108,15 @@ description: "Task list template for feature implementation"
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T018 [P] [US2] Contract test for process payment endpoint in tests/contract/test_invoice_process_payment.py
-- [ ] T019 [P] [US2] Integration test for process payment user journey in tests/integration/test_invoice_process_payment.py
+[x] T018 [P] [US2] Contract test for process payment endpoint in tests/contract/test_invoice_process_payment.py
+[x] T019 [P] [US2] Integration test for process payment user journey in tests/integration/test_invoice_process_payment.py
 
 ### Implementation for User Story 2
 
-- [ ] T020 [P] [US2] Implement process payment endpoint in src/presentation/api/invoice_endpoints.py
-- [ ] T021 [US2] Implement process payment service in src/services/invoice_service.py
-- [ ] T022 [US2] Add validation and error handling for FR-004, FR-005, FR-006
-- [ ] T023 [US2] Integrate with User Story 1 components (invoice model, service layer)
+[x] T020 [P] [US2] Implement process payment endpoint in src/presentation/api/invoice_endpoints.py
+[x] T021 [US2] Implement process payment service in src/services/invoice_service.py
+[x] T022 [US2] Add validation and error handling for FR-004, FR-005, FR-006
+[x] T023 [US2] Integrate with User Story 1 components (invoice model, service layer)
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 
@@ -132,14 +132,14 @@ description: "Task list template for feature implementation"
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T024 [P] [US3] Contract test for view billing history endpoint in tests/contract/test_invoice_billing_history.py
-- [ ] T025 [P] [US3] Integration test for view billing history user journey in tests/integration/test_invoice_billing_history.py
+[x] T024 [P] [US3] Contract test for view billing history endpoint in tests/contract/test_invoice_billing_history.py
+[x] T025 [P] [US3] Integration test for view billing history user journey in tests/integration/test_invoice_billing_history.py
 
 ### Implementation for User Story 3
 
-- [ ] T026 [P] [US3] Implement view billing history endpoint in src/presentation/api/invoice_endpoints.py
-- [ ] T027 [US3] Implement billing history service in src/services/invoice_service.py
-- [ ] T028 [US3] Add status transition validation and completed_at timestamp handling
+[x] T026 [P] [US3] Implement view billing history endpoint in src/presentation/api/invoice_endpoints.py
+[x] T027 [US3] Implement billing history service in src/services/invoice_service.py
+[x] T028 [US3] Add status transition validation and completed_at timestamp handling
 
 **Checkpoint**: All user stories should now be independently functional
 
@@ -149,12 +149,12 @@ description: "Task list template for feature implementation"
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T029 [P] Documentation updates in docs/ referencing invoice API contracts
-- [ ] T030 Code cleanup and refactoring across invoice service, models, and endpoints
-- [ ] T031 [P] Performance optimization across all stories (target: sub-200ms create/list operations)
-- [ ] T032 [P] Additional unit tests in tests/unit/ for domain logic
-- [ ] T033 Security hardening: JWT validation, permission checks, input validation
-- [ ] T034 Run quickstart.md validation all validation scenarios pass
+[x] T029 [P] Documentation updates in docs/ referencing invoice API contracts
+[x] T030 Code cleanup and refactoring across invoice service, models, and endpoints
+[x] T031 [P] Performance optimization across all stories (target: sub-200ms create/list operations)
+[x] T032 [P] Additional unit tests in tests/unit/ for domain logic
+[x] T033 Security hardening: JWT validation, permission checks, input validation
+[x] T034 Run quickstart.md validation all validation scenarios pass
 
 ---
 

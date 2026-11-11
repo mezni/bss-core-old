@@ -8,6 +8,14 @@
 
 **Input**: User description: "S05 is billing"
 
+## Clarifications
+
+**Session 2026-11-11**
+
+- Q: JWT auth details → A: JWT with RSA signatures and `user:billing`/`user:view` scopes
+- Q: Invoice identifier format → A: The internal `id` field (UUID v4 with INV- prefix) is the unique identifier; `invoice_number` (format INV-YYYYMMDD-####) is the human-readable display field
+- Q: FR-006 clear error message criteria → A: Three quantified dimensions: (1) max 100 characters, (2) required content: machine-readable error code + user-friendly message + actionable remediation step, (3) human readability verified by 2 independent reviewers
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Generate Invoice (Priority: P1)
@@ -98,7 +106,7 @@ Can be fully tested by viewing billing history for a customer, verifying all inv
 - **SC-001**: A customer can generate an invoice for a completed order in under 2 minutes from the order management interface.
 - **SC-002**: An invoice cannot be generated for an order that is not in billable status; the system rejects the generation request with a clear error.
 - **SC-003**: Invoice unique identifier is generated on creation and follows format: INV-550e8400-e29b-41d4-a716-446655440000.
-- **SC-004**: Invoice total matches the associated order/shipment total amount exactly.
+- **SC-004**: Invoice total matches the associated order/shipment total amount exactly (rounded with standard rounding (round-half-up) to 2 decimal places at each calculation step; exact equality comparison, no tolerance).
 - **SC-005**: Payment can be processed for an invoice in pending status; paid invoices cannot be re-processed.
 - **SC-006**: Invoice payment status transitions follow the defined sequence: pending → paid (terminal); invalid transitions are rejected at least 95% of the time in automated testing.
 - **SC-007**: Invoice API create and list operations respond in under 200ms (aligned with financial API performance goals).
@@ -115,12 +123,16 @@ Can be fully tested by viewing billing history for a customer, verifying all inv
 
 - **Existing order management (S03) provides completed orders for invoice generation.**
 - **Customers must have at least one completed order to be eligible for invoice generation.**
-- **Invoice number is generated optionally on creation; payment date can be provided or set to current timestamp.**
+- **Invoice number is generated optionally on creation; the internal uid=1000(dali) gid=1000(dali) groups=1000(dali),4(adm),24(cdrom),27(sudo),30(dip),46(plugdev),100(users),116(lpadmin),979(docker),981(vboxsf) field (UUID v4 with INV- prefix) is the unique identifier per SC-003 clarification; payment date can be provided or set to current timestamp.**
 - **Invoice status transitions are strict; the system enforces these boundaries without exposing internal implementation details.**
 - **Payment method validation is handled by payment processor integration; S05 MVP supports basic card and bank transfer methods.**
+- **Payment data protection: Card data encrypted at rest with AES-256, no full PAN stored; bank transfer details hashed with Argon2id, reference only (Q: Payment data protection → A: Card data encrypted at rest with AES-256, no full PAN stored; bank transfer details hashed with Argon2id, reference only).**
 - **Data volume assumption: 10-100 invoices per month, supporting <500 active invoices with ~10% monthly growth.**
+- **Concurrent edit handling: Optimistic concurrency with version field on invoices; reject conflicts with 409 and return current state (Q: Concurrent edit resolution → A: Optimistic concurrency with version field on invoices; reject conflicts with 409 and return current state).**
 - **Reliability target: 99.9% uptime for core billing operations; structured JSON logging for all state transitions and critical API errors.**
-- **Security model: JWT authentication with role-based access control; user:billing for write operations, user:view for read operations.**
+- **Rate limiting: Endpoint-specific limits - invoice creation 10/min per user, payment processing 5/min per user, list operations 100/min per user, with 429 responses and Retry-A header (Q: Rate limiting policy → A: Endpoint-specific limits: invoice creation 10/min per user, payment processing 5/min per user, list operations 100/min per user, with 429 responses and Retry-A header).**
+- **Error and empty state coverage: Define explicit error responses (400, 404, 409, 422) with machine-readable error codes and messages; empty state UI showing "no invoices found" with contextual action; loading states with timeout fallback (Q: Error/empty state coverage → A: Define explicit error responses (400, 404, 409, 422) with machine-readable error codes and messages; empty state UI showing "no invoices found" with contextual action; loading states with timeout fallback).**
+- **Security model: JWT with RSA signatures and `user:billing`/`user:view` scopes for authentication and authorization; user:billing for write operations, user:view for read operations.**
 
 ## Dependencies
 
