@@ -54,4 +54,5 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.uv.workspace]
 members = [
     "src/shipment",
+    "src",
 ]

@@ -3,6 +3,14 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+# Import Base from the domain models
+from src.models.invoice import Base as InvoiceBase
+from src.models.payment import Base as PaymentBase
+from src.models.order import Base as OrderBase
+
+# Combine all metadata
+target_metadata = InvoiceBase.metadata
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
@@ -16,7 +24,6 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = None
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

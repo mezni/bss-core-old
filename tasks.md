@@ -2,9 +2,9 @@
 description: "Task list template for feature implementation"
 ---
 
-# Tasks: Shipment Management (S04)
+# Tasks: Billing (S05)
 
-**Input**: Design documents from `/specs/005-shipment-management/`
+**Input**: Design documents from `/specs/006-billing/`
 
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
@@ -59,85 +59,87 @@ description: "Task list template for feature implementation"
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
 - [x] T004 Setup database schema and migrations framework with Alembic
-- [x] T005 [P] Implement authentication/authorization framework with JWT
+- [x] T005 [P] Implement authentication/authorization framework with JWT (RBAC)
 - [x] T006 [P] Setup API routing and middleware structure with FastAPI
-- [x] T007 Create base models/entities that all stories depend on: Shipment and Order models
+- [x] T007 Create base models/entities that all stories depend on: Invoice, Payment, Order models
 - [x] T008 Configure error handling and logging infrastructure with structured JSON logging
 - [x] T009 Setup environment configuration management
+- [ ] T036 [P] [US1] Implement API response time validation for invoice creation endpoint (target: ≤200ms per SC-007)
+- [ ] T037 [P] [US1] Implement API response time validation for invoice list endpoint (target: ≤200ms per SC-007)
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
 ---
 
-## Phase 3: User Story 1 - Create Shipment (Priority: P1) 🎯 MVP
+## Phase 3: User Story 1 - Generate Invoice (Priority: P1) 🎯 MVP
 
-**Goal**: An authenticated user can create a new shipment record for a confirmed order, initiating the delivery process. Shipment starts in pending status with tracking information.
+**Goal**: An authenticated user can generate an invoice for a completed order or shipment, initiating the billing process.
 
-**Independent Test**: Can be fully tested by creating a shipment for a confirmed order, verifying the shipment is assigned an ID, status is set to pending, and tracking information is captured. The test succeeds even if no other shipment flows are exercised.
+**Independent Test**: Can be fully tested by generating an invoice for a completed order, verifying the invoice is assigned an ID, total amount is calculated correctly, and billing information is captured. The test succeeds even if no other billing flows are exercised.
 
 ### Tests for User Story 1 (OPTIONAL - only if tests requested) ⚠️
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [x] T010 [P] [US1] Contract test for create shipment endpoint in tests/contract/test_shipment_create.py
-- [x] T011 [P] [US1] Integration test for create shipment user journey in tests/integration/test_shipment_create.py
+- [ ] T010 [P] [US1] Contract test for create invoice endpoint in tests/contract/test_invoice_create.py
+- [ ] T011 [P] [US1] Integration test for generate invoice user journey in tests/integration/test_invoice_create.py
 
 ### Implementation for User Story 1
 
-- [x] T012 [P] [US1] Create Shipment model in src/models/shipment.py
-- [x] T013 [P] [US1] Create Order model in src/models/order.py
-- [x] T014 [US1] Implement ShipmentService in src/services/shipment_service.py (depends on T012, T013)
-- [x] T015 [US1] Implement shipment creation endpoint in src/presentation/api/shipment_endpoints.py
-- [x] T016 [US1] Add validation and error handling for FR-001, FR-002, FR-003
-- [x] T017 [US1] Add logging for shipment creation operations
-- [x] T035 [P] [US1] Implement pagination parameters (page, page_size) for list shipments GET /api/v1/shipments in src/presentation/api/shipment_endpoints.py
+- [ ] T012 [P] [US1] Create Invoice model in src/models/invoice.py
+- [ ] T013 [P] [US1] Create Payment model in src/models/payment.py
+- [ ] T014 [US1] Implement InvoiceService in src/services/invoice_service.py (depends on T012, T013)
+- [ ] T015 [US1] Implement invoice creation endpoint in src/presentation/api/invoice_endpoints.py
+- [ ] T016 [US1] Add validation and error handling for FR-001, FR-002, FR-003
+- [ ] T017 [US1] Add logging for invoice creation operations
+- [ ] T035 [P] [US1] Implement pagination parameters (page, page_size) for list invoices GET /api/v1/invoices in src/presentation/api/invoice_endpoints.py
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
 ---
 
-## Phase 4: User Story 2 - Update Shipment (Priority: P2)
+## Phase 4: User Story 2 - Process Payment (Priority: P2)
 
-**Goal**: An authenticated user can update shipment information such as carrier, tracking number, or status. This allows the logistics team to correct or update shipment details as needed.
+**Goal**: An authenticated user can process a payment against an invoice, recording payment details and updating the invoice status.
 
-**Independent Test**: Can be fully tested by creating a shipment, updating its carrier and tracking number, and verifying the updated information is reflected in the shipment response. The test passes regardless of subsequent status changes.
+**Independent Test**: Can be fully tested by processing a payment against an invoice, verifying the payment is assigned an ID, amount matches invoice total, and invoice status updates to paid. The test passes regardless of subsequent status changes.
 
 ### Tests for User Story 2 (OPTIONAL - only if tests requested) ⚠️
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [x] T018 [P] [US2] Contract test for update shipment endpoint in tests/contract/test_shipment_update.py
-- [x] T019 [P] [US2] Integration test for update shipment user journey in tests/integration/test_shipment_update.py
+- [ ] T018 [P] [US2] Contract test for process payment endpoint in tests/contract/test_invoice_process_payment.py
+- [ ] T019 [P] [US2] Integration test for process payment user journey in tests/integration/test_invoice_process_payment.py
 
 ### Implementation for User Story 2
 
-- [x] T020 [P] [US2] Implement update shipment endpoint in src/presentation/api/shipment_endpoints.py
-- [x] T021 [US2] Implement update shipment service in src/services/shipment_service.py
-- [x] T022 [US2] Add validation and error handling for FR-004, FR-005, FR-006
-- [x] T023 [US2] Integrate with User Story 1 components (shipment model, service layer)
+- [ ] T020 [P] [US2] Implement process payment endpoint in src/presentation/api/invoice_endpoints.py
+- [ ] T021 [US2] Implement process payment service in src/services/invoice_service.py
+- [ ] T022 [US2] Add validation and error handling for FR-004, FR-005, FR-006
+- [ ] T023 [US2] Integrate with User Story 1 components (invoice model, service layer)
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 
 ---
 
-## Phase 5: User Story 3 - Confirm Delivery (Priority: P3)
+## Phase 5: User Story 3 - View Billing History (Priority: P3)
 
-**Goal**: An authenticated user can confirm that an order has been delivered, updating the shipment status to delivered and closing the delivery lifecycle.
+**Goal**: An authenticated user can view billing history for their account, seeing all invoices and payments associated with their orders or shipments.
 
-**Independent Test**: Can be fully tested by creating a shipment, updating its status to in-transit, confirming delivery, and verifying the shipment status changes to delivered. The test validates the boundary rules without requiring the full billing workflow.
+**Independent Test**: Can be fully tested by viewing billing history for a customer, verifying all invoices and payments are listed with correct amounts and statuses. The test validates the boundary rules without requiring the full accounting workflow.
 
 ### Tests for User Story 3 (OPTIONAL - only if tests requested) ⚠️
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [x] T024 [P] [US3] Contract test for confirm delivery endpoint in tests/contract/test_shipment_delivery.py
-- [x] T025 [P] [US3] Integration test for confirm delivery user journey in tests/integration/test_shipment_delivery.py
+- [ ] T024 [P] [US3] Contract test for view billing history endpoint in tests/contract/test_invoice_billing_history.py
+- [ ] T025 [P] [US3] Integration test for view billing history user journey in tests/integration/test_invoice_billing_history.py
 
 ### Implementation for User Story 3
 
-- [x] T026 [P] [US3] Implement confirm delivery endpoint in src/presentation/api/shipment_endpoints.py
-- [x] T027 [US3] Implement delivery confirmation service in src/services/shipment_service.py
-- [x] T028 [US3] Add status transition validation and delivered_at timestamp handling
+- [ ] T026 [P] [US3] Implement view billing history endpoint in src/presentation/api/invoice_endpoints.py
+- [ ] T027 [US3] Implement billing history service in src/services/invoice_service.py
+- [ ] T028 [US3] Add status transition validation and completed_at timestamp handling
 
 **Checkpoint**: All user stories should now be independently functional
 
@@ -147,12 +149,12 @@ description: "Task list template for feature implementation"
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [x] T029 [P] Documentation updates in docs/ referencing shipment API contracts
-- [x] T030 Code cleanup and refactoring across shipment service, models, and endpoints
-- [x] T031 [P] Performance optimization across all stories (target: sub-200ms create/list operations)
-- [x] T032 [P] Additional unit tests in tests/unit/ for domain logic
-- [x] T033 Security hardening: JWT validation, permission checks, input validation
-- [x] T034 Run quickstart.md validation all validation scenarios pass
+- [ ] T029 [P] Documentation updates in docs/ referencing invoice API contracts
+- [ ] T030 Code cleanup and refactoring across invoice service, models, and endpoints
+- [ ] T031 [P] Performance optimization across all stories (target: sub-200ms create/list operations)
+- [ ] T032 [P] Additional unit tests in tests/unit/ for domain logic
+- [ ] T033 Security hardening: JWT validation, permission checks, input validation
+- [ ] T034 Run quickstart.md validation all validation scenarios pass
 
 ---
 
@@ -194,12 +196,12 @@ description: "Task list template for feature implementation"
 
 ```bash
 # Launch all tests for User Story 1 together (if tests requested):
-Task: "Contract test for create shipment endpoint in tests/contract/test_shipment_create.py"
-Task: "Integration test for create shipment user journey in tests/integration/test_shipment_create.py"
+Task: "Contract test for create invoice endpoint in tests/contract/test_invoice_create.py"
+Task: "Integration test for generate invoice user journey in tests/integration/test_invoice_create.py"
 
 # Launch all models for User Story 1 together:
-Task: "Create Shipment model in src/models/shipment.py"
-Task: "Create Order model in src/models/order.py"
+Task: "Create Invoice model in src/models/invoice.py"
+Task: "Create Payment model in src/models/payment.py"
 ```
 
 ## Implementation Strategy
