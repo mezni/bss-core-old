@@ -20,8 +20,9 @@ class DashboardService:
         self.db_session_factory = db_session_factory
 
     def _get_session(self):
-        from src.infrastructure.db.config import get_db
-        return self.db_session_factory() if callable(self.db_session_factory) else get_db()
+        from src.domain.database import get_session
+
+        return self.db_session_factory() if callable(self.db_session_factory) else get_session()
 
     def get_metrics(
         self,

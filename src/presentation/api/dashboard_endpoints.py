@@ -1,17 +1,20 @@
+"""Dashboard metrics REST endpoints.
+
+The router is mounted into the consolidated application composition root
+(``src.api.health:app``); this module no longer creates a standalone FastAPI
+application.
+"""
+
 from __future__ import annotations
 
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session
 
+from src.domain.database import get_db
 from src.models.dashboard_metric import DashboardMetric
-from src.models.reporting_period import ReportingPeriod
 from src.services.dashboard_service import DashboardService
-from src.infrastructure.db.config import get_db, init_db
-
-
-# Create FastAPI app instance
-app = FastAPI(title="BSS Core Dashboard API", version="0.1.0")
 
 router = APIRouter(prefix="/api/v1/dashboard", tags=["dashboard"])
 
@@ -55,26 +58,18 @@ def get_dashboard_metrics(
     db: Session = Depends(get_db),
 ):
     """Retrieve dashboard metrics with filtering and pagination."""
-    init_db()
-
     svc = get_dashboard_service(db)
 
     try:
         start_dt = (
-            datetime.fromisoformat(start_date).replace(tzinfo=timezone.utc)
-            if start_date
-            else None
+            datetime.fromisoformat(start_date).replace(tzinfo=UTC) if start_date else None
         )
-        end_dt = (
-            datetime.fromisoformat(end_date).replace(tzinfo=timezone.utc)
-            if end_date
-            else None
-        )
+        end_dt = datetime.fromisoformat(end_date).replace(tzinfo=UTC) if end_date else None
     except (ValueError, TypeError):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid ISO-8601 date format for start_date or end_date",
-        )
+        ) from None
 
     metrics = svc.get_metrics(
         category=category,
@@ -101,9 +96,7 @@ def get_dashboard_metrics(
                 "date_range_start": m.date_range_start.isoformat()
                 if m.date_range_start
                 else None,
-                "date_range_end": m.date_range_end.isoformat()
-                if m.date_range_end
-                else None,
+                "date_range_end": m.date_range_end.isoformat() if m.date_range_end else None,
                 "reporting_period": m.reporting_period,
                 "category": m.category,
                 "category_specific_id": m.category_specific_id,
@@ -111,12 +104,8 @@ def get_dashboard_metrics(
                 "last_refreshed": m.last_refreshed.isoformat()
                 if m.last_refreshed
                 else None,
-                "created_at": m.created_at.isoformat()
-                if m.created_at
-                else None,
-                "updated_at": m.updated_at.isoformat()
-                if m.updated_at
-                else None,
+                "created_at": m.created_at.isoformat() if m.created_at else None,
+                "updated_at": m.updated_at.isoformat() if m.updated_at else None,
             }
         )
 
@@ -125,9 +114,6 @@ def get_dashboard_metrics(
         "total": total,
         "page": page,
         "page_size": page_size,
-        "last_refreshed": datetime.now(timezone.utc).isoformat(),
+        "last_refreshed": datetime.now(UTC).isoformat(),
         "cache_ttl_seconds": 300,
     }
-
-
-app.include_router(router)

@@ -10,6 +10,7 @@ requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.20.1",
     "argon2-cffi>=25.1.0",
+    "faker>=40.54.0",
     "fastapi>=0.162.2",
     "httpx>=0.28.1",
     "pydantic>=2.14.3",
@@ -26,6 +27,7 @@ dependencies = [
 
 [project.scripts]
 bss-core = "bss_core:main"
+bss-datagen = "bss_core.datagen_entry:main"
 
 [build-system]
 requires = ["uv_build>=0.12.15,<0.13.0"]
@@ -54,5 +56,4 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.uv.workspace]
 members = [
     "src/shipment",
-    "src",
 ]

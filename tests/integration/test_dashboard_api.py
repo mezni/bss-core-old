@@ -1,36 +1,31 @@
 """Integration test for dashboard API metric retrieval user journey.
 
-Tests the full dashboard API flow including authentication, filtering, and response validation.
-This test should FAIL before the backend is implemented, then PASS after.
+Tests the full dashboard API flow on the consolidated application with a
+hermetic dashboard database, including filtering and response validation.
 """
 
-from datetime import datetime, timezone
+from __future__ import annotations
 
-from fastapi.testclient import TestClient
+from datetime import datetime
 
 
-def test_dashboard_api_retrieve_metrics():
+def test_dashboard_api_retrieve_metrics(dashboard_client):
     """Test that an authenticated operator can retrieve dashboard metrics."""
-    from src.presentation.api.dashboard_endpoints import app
-
-    client = TestClient(app)
-    response = client.get("/api/v1/dashboard/metrics")
+    response = dashboard_client.get("/api/v1/dashboard/metrics")
 
     assert response.status_code == 200
     data = response.json()
     assert "metrics" in data
     assert "total" in data
+    assert data["total"] >= 1
 
 
-def test_dashboard_api_date_range_filtering():
+def test_dashboard_api_date_range_filtering(dashboard_client):
     """Test dashboard API date range filtering."""
-    from src.presentation.api.dashboard_endpoints import app
+    start = datetime(2020, 1, 1).isoformat()
+    end = datetime(2030, 12, 31, 23, 59, 59).isoformat()
 
-    client = TestClient(app)
-    start = datetime(2026, 11, 1).isoformat()
-    end = datetime(2026, 11, 11, 23, 59, 59).isoformat()
-
-    response = client.get(
+    response = dashboard_client.get(
         "/api/v1/dashboard/metrics",
         params={"start_date": start, "end_date": end},
     )
@@ -40,37 +35,29 @@ def test_dashboard_api_date_range_filtering():
     assert data["total"] >= 0
 
 
-def test_dashboard_api_period_filtering():
+def test_dashboard_api_period_filtering(dashboard_client):
     """Test dashboard API predefined period filtering."""
-    from src.presentation.api.dashboard_endpoints import app
-
-    client = TestClient(app)
-
     for period in ["current_month", "current_quarter", "year_to_date"]:
-        response = client.get("/api/v1/dashboard/metrics", params={"period": period})
+        response = dashboard_client.get("/api/v1/dashboard/metrics", params={"period": period})
         assert response.status_code == 200
         data = response.json()
         assert "metrics" in data
 
 
-def test_dashboard_api_role_based_access():
+def test_dashboard_api_role_based_access(dashboard_client):
     """Test dashboard API role-based access control."""
-    from src.presentation.api.dashboard_endpoints import app
-
-    client = TestClient(app)
-
     # Test with no role tier (should default to operator)
-    response = client.get("/api/v1/dashboard/metrics")
+    response = dashboard_client.get("/api/v1/dashboard/metrics")
     assert response.status_code == 200
 
     # Test with operator role tier
-    response = client.get("/api/v1/dashboard/metrics", params={"role_tier": "operator"})
+    response = dashboard_client.get("/api/v1/dashboard/metrics", params={"role_tier": "operator"})
     assert response.status_code == 200
 
     # Test with manager role tier
-    response = client.get("/api/v1/dashboard/metrics", params={"role_tier": "manager"})
+    response = dashboard_client.get("/api/v1/dashboard/metrics", params={"role_tier": "manager"})
     assert response.status_code == 200
 
     # Test with admin role tier
-    response = client.get("/api/v1/dashboard/metrics", params={"role_tier": "admin"})
+    response = dashboard_client.get("/api/v1/dashboard/metrics", params={"role_tier": "admin"})
     assert response.status_code == 200

@@ -65,13 +65,12 @@ class CustomerAPIClient:
             ) from error
         if response.status_code >= 400:
             try:
-                error = response.json().get("error", {})
+                payload = response.json()
             except ValueError:
-                error = {}
+                payload = {}
             raise CustomerAPIError(
-                code=error.get("code", "API_ERROR"),
-                message=error.get("message", response.text),
-                details=error.get("details", {}),
+                code=payload.get("code", "API_ERROR"),
+                message=payload.get("message", response.text),
                 status_code=response.status_code,
             )
         return response

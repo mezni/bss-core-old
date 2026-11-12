@@ -19,6 +19,10 @@ class SQLAlchemyOrderRepository:
     def __init__(self, session: Session) -> None:
         self.session = session
 
+    def _commit(self) -> None:
+        """Flush and commit the current transaction."""
+        self.session.commit()
+
     def add(self, order: Order) -> Order:
         """Persist a new order aggregate."""
         orm = self._to_orm(order)

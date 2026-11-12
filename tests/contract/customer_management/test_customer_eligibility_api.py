@@ -94,7 +94,7 @@ def test_eligibility_for_missing_customer_returns_not_found(client, auth_headers
     )
 
     assert response.status_code == 404
-    assert response.json()["error"]["code"] == "CUSTOMER_NOT_FOUND"
+    assert response.json()["code"] == "CUSTOMER_NOT_FOUND"
 
 
 def test_eligibility_requires_view_permission(client, auth_headers) -> None:

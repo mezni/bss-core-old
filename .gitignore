@@ -4,11 +4,18 @@ __pycache__/
 *.pyo
 *.pyd
 venv/
+.venv/
 .env*
 # FastAPI / uvicorn / Starlette
 dist/
 build/
 *.egg-info/
+# SQLite runtime databases (schema is owned by Alembic migrations)
+*.db
+db/
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
 # IDE
 .vscode/
 .idea/

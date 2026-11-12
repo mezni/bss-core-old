@@ -60,3 +60,16 @@ class OrderServicePort(Protocol):
     def update_item_quantity(self, order_id: str, item_id: str, quantity: float) -> OrderDTO:
         """Update an item quantity."""
         ...
+
+
+class OrderStatusPort(Protocol):
+    """Read-write order status interface for other business modules."""
+
+    def mark_as_shipped(self, order_id: str) -> OrderDTO:
+        """Transition the order status to SHIPPED.
+
+        Raises:
+            OrderNotFound: When the order does not exist.
+            InvalidOrder: When the current status is not CONFIRMED.
+        """
+        ...

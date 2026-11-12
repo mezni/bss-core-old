@@ -79,9 +79,10 @@ def test_stale_patch_returns_conflict(client, auth_headers) -> None:
     )
 
     assert stale.status_code == 409
-    body = stale.json()["error"]
+    body = stale.json()
     assert body["code"] == "STALE_UPDATE"
-    assert body["details"]["current_version"] == 2
+    assert body["error"] == "stale_update"
+    assert "current_version=2" in body["message"]
 
 
 def test_deactivate_and_reactivate(client, auth_headers) -> None:
@@ -124,7 +125,7 @@ def test_duplicate_individual_email_returns_conflict(client, auth_headers) -> No
     )
 
     assert response.status_code == 409
-    assert response.json()["error"]["code"] == "DUPLICATE_CUSTOMER"
+    assert response.json()["code"] == "DUPLICATE_CUSTOMER"
 
 
 def test_business_may_share_individual_email(client, auth_headers) -> None:
@@ -147,19 +148,19 @@ def test_missing_customer_returns_not_found(client, auth_headers) -> None:
     )
 
     assert response.status_code == 404
-    assert response.json()["error"]["code"] == "CUSTOMER_NOT_FOUND"
+    assert response.json()["code"] == "CUSTOMER_NOT_FOUND"
 
 
 def test_authorization_is_enforced(client, auth_headers) -> None:
     missing = client.get("/api/v1/customers")
     assert missing.status_code == 401
-    assert missing.json()["error"]["code"] == "UNAUTHENTICATED"
+    assert missing.json()["code"] == "UNAUTHENTICATED"
 
     forbidden = client.get(
         "/api/v1/customers", headers=auth_headers("customer:manage")
     )
     assert forbidden.status_code == 403
-    assert forbidden.json()["error"]["code"] == "FORBIDDEN"
+    assert forbidden.json()["code"] == "FORBIDDEN"
 
     forbidden_write = client.post(
         "/api/v1/customers",
@@ -177,4 +178,4 @@ def test_validation_errors_use_shared_envelope(client, auth_headers) -> None:
     )
 
     assert response.status_code == 400
-    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+    assert response.json()["code"] == "VALIDATION_ERROR"

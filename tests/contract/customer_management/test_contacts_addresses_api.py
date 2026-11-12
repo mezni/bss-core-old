@@ -137,7 +137,7 @@ def test_duplicate_primary_contact_returns_conflict(client, auth_headers) -> Non
     )
 
     assert response.status_code == 409
-    assert response.json()["error"]["code"] == "DUPLICATE_PRIMARY_CONTACT"
+    assert response.json()["code"] == "DUPLICATE_PRIMARY_CONTACT"
 
 
 def test_stale_child_mutation_returns_conflict(client, auth_headers) -> None:
@@ -151,7 +151,7 @@ def test_stale_child_mutation_returns_conflict(client, auth_headers) -> None:
     )
 
     assert response.status_code == 409
-    assert response.json()["error"]["code"] == "STALE_UPDATE"
+    assert response.json()["code"] == "STALE_UPDATE"
 
 
 def test_missing_contact_and_address_return_not_found(client, auth_headers) -> None:
@@ -163,7 +163,7 @@ def test_missing_contact_and_address_return_not_found(client, auth_headers) -> N
         headers=auth_headers("customer:manage"),
     )
     assert contact.status_code == 404
-    assert contact.json()["error"]["code"] == "CONTACT_NOT_FOUND"
+    assert contact.json()["code"] == "CONTACT_NOT_FOUND"
 
     address = client.patch(
         f"/api/v1/customers/{customer['id']}/addresses/missing",
@@ -171,7 +171,7 @@ def test_missing_contact_and_address_return_not_found(client, auth_headers) -> N
         headers=auth_headers("customer:manage"),
     )
     assert address.status_code == 404
-    assert address.json()["error"]["code"] == "ADDRESS_NOT_FOUND"
+    assert address.json()["code"] == "ADDRESS_NOT_FOUND"
 
 
 def test_child_mutations_require_manage_permission(client, auth_headers) -> None:

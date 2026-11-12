@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
-
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class OrderItemCreate(BaseModel):
@@ -14,7 +12,8 @@ class OrderItemCreate(BaseModel):
     quantity: float = Field(gt=0, description="Item quantity")
     unit_price: float = Field(ge=0, description="Unit price")
 
-    @validator("description")
+    @field_validator("description")
+    @classmethod
     def description_not_empty(cls, v: str) -> str:
         """Ensure description is not just whitespace."""
         if not v.strip():
@@ -25,13 +24,12 @@ class OrderItemCreate(BaseModel):
 class OrderCreate(BaseModel):
     """Schema for creating an order."""
 
-    customer_id: str = Field(..., description="Customer ID")
-    items: list[OrderItemCreate] = Field(
-        description="Order items array",
-    )
+    customer_id: str = Field(..., min_length=1, description="Customer ID")
+    items: list[OrderItemCreate] = Field(description="Order items array")
 
-    @validator("items")
-    def at_least_one_item(cls, v: list[Any]) -> list[Any]:
+    @field_validator("items")
+    @classmethod
+    def at_least_one_item(cls, v: list[OrderItemCreate]) -> list[OrderItemCreate]:
         """Ensure at least one item is provided."""
         if len(v) < 1:
             raise ValueError("At least one order item is required")

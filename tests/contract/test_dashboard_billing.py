@@ -1,18 +1,15 @@
 """Contract test for dashboard billing metrics endpoint.
 
-Tests that the dashboard billing metrics endpoint exists and responds correctly.
-This test should FAIL before the dashboard API is implemented, then PASS after.
+Verifies the billing-category metrics contract against the consolidated
+application mounted with a hermetic dashboard database.
 """
 
-from fastapi.testclient import TestClient
+from __future__ import annotations
 
 
-def test_dashboard_billing_endpoint_exists():
+def test_dashboard_billing_endpoint_exists(dashboard_client):
     """Test that the dashboard billing metrics endpoint exists and responds."""
-    from src.presentation.api.dashboard_endpoints import app
-
-    client = TestClient(app)
-    response = client.get("/api/v1/dashboard/metrics?category=billing")
+    response = dashboard_client.get("/api/v1/dashboard/metrics?category=billing")
 
     assert response.status_code == 200
     data = response.json()
@@ -20,12 +17,9 @@ def test_dashboard_billing_endpoint_exists():
     assert "total" in data
 
 
-def test_dashboard_billing_response_format():
+def test_dashboard_billing_response_format(dashboard_client):
     """Test that dashboard billing metrics response has expected format."""
-    from src.presentation.api.dashboard_endpoints import app
-
-    client = TestClient(app)
-    response = client.get("/api/v1/dashboard/metrics?category=billing")
+    response = dashboard_client.get("/api/v1/dashboard/metrics?category=billing")
 
     assert response.status_code == 200
     data = response.json()
@@ -36,11 +30,11 @@ def test_dashboard_billing_response_format():
     assert "last_refreshed" in data
     assert "cache_ttl_seconds" in data
 
-    if data["metrics"]:
-        metric = data["metrics"][0]
-        assert "metric_name" in metric
-        assert "value" in metric
-        assert "unit" in metric
-        assert "aggregation_type" in metric
-        assert "category" in metric
-        assert metric["category"] == "billing"
+    assert data["total"] == 1
+    metric = data["metrics"][0]
+    assert "metric_name" in metric
+    assert "value" in metric
+    assert "unit" in metric
+    assert "aggregation_type" in metric
+    assert "category" in metric
+    assert metric["category"] == "billing"

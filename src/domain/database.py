@@ -7,7 +7,7 @@ to other databases (PostgreSQL, MySQL) per module needs.
 
 import os
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 
 # SQLite configuration - initial database per constitution technology standards.
@@ -20,6 +20,14 @@ engine = create_engine(
     connect_args={"check_same_thread": False},
     echo=False,
 )
+
+
+@event.listens_for(engine, "connect")
+def _set_sqlite_pragma(dbapi_connection, connection_record) -> None:
+    """Enforce referential integrity on SQLite (constitution Section 7)."""
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
 
 # Session factory configured for dependency injection
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

@@ -1,18 +1,15 @@
 """Contract test for dashboard metrics endpoint.
 
-Tests that the dashboard metrics endpoint exists and responds correctly.
-This test should FAIL before the dashboard API is implemented, then PASS after.
+Verifies the dashboard metrics contract against the consolidated
+application mounted with a hermetic dashboard database.
 """
 
-from fastapi.testclient import TestClient
+from __future__ import annotations
 
 
-def test_dashboard_metrics_endpoint_exists():
+def test_dashboard_metrics_endpoint_exists(dashboard_client):
     """Test that the dashboard metrics endpoint exists and responds."""
-    from src.presentation.api.dashboard_endpoints import app
-
-    client = TestClient(app)
-    response = client.get("/api/v1/dashboard/metrics")
+    response = dashboard_client.get("/api/v1/dashboard/metrics")
 
     assert response.status_code == 200
     data = response.json()
@@ -22,12 +19,9 @@ def test_dashboard_metrics_endpoint_exists():
     assert "page_size" in data
 
 
-def test_dashboard_metrics_response_format():
+def test_dashboard_metrics_response_format(dashboard_client):
     """Test that dashboard metrics response has expected format."""
-    from src.presentation.api.dashboard_endpoints import app
-
-    client = TestClient(app)
-    response = client.get("/api/v1/dashboard/metrics")
+    response = dashboard_client.get("/api/v1/dashboard/metrics")
 
     assert response.status_code == 200
     data = response.json()
@@ -38,10 +32,10 @@ def test_dashboard_metrics_response_format():
     assert "last_refreshed" in data
     assert "cache_ttl_seconds" in data
 
-    if data["metrics"]:
-        metric = data["metrics"][0]
-        assert "metric_name" in metric
-        assert "value" in metric
-        assert "unit" in metric
-        assert "aggregation_type" in metric
-        assert "category" in metric
+    assert data["total"] >= 1
+    metric = data["metrics"][0]
+    assert "metric_name" in metric
+    assert "value" in metric
+    assert "unit" in metric
+    assert "aggregation_type" in metric
+    assert "category" in metric

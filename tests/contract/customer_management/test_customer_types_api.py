@@ -40,7 +40,7 @@ def test_individual_missing_required_fields_is_unprocessable(client, auth_header
     )
 
     assert response.status_code == 422
-    assert response.json()["error"]["code"] == "UNPROCESSABLE_ENTITY"
+    assert response.json()["code"] == "UNPROCESSABLE_ENTITY"
 
 
 def test_business_missing_required_fields_is_unprocessable(client, auth_headers) -> None:
@@ -51,7 +51,7 @@ def test_business_missing_required_fields_is_unprocessable(client, auth_headers)
     )
 
     assert response.status_code == 422
-    assert response.json()["error"]["code"] == "UNPROCESSABLE_ENTITY"
+    assert response.json()["code"] == "UNPROCESSABLE_ENTITY"
 
 
 def test_business_registration_must_be_unique(client, auth_headers) -> None:
@@ -64,7 +64,7 @@ def test_business_registration_must_be_unique(client, auth_headers) -> None:
     )
 
     assert response.status_code == 409
-    assert response.json()["error"]["code"] == "DUPLICATE_CUSTOMER"
+    assert response.json()["code"] == "DUPLICATE_CUSTOMER"
 
 
 def test_business_may_reuse_an_individual_email(client, auth_headers) -> None:
@@ -111,7 +111,7 @@ def test_change_individual_to_business_requires_fields(client, auth_headers) -> 
     )
 
     assert response.status_code == 422
-    assert response.json()["error"]["code"] == "UNPROCESSABLE_ENTITY"
+    assert response.json()["code"] == "UNPROCESSABLE_ENTITY"
 
 
 def test_change_business_to_individual(client, auth_headers) -> None:
@@ -153,4 +153,4 @@ def test_type_change_respects_type_scoped_uniqueness(client, auth_headers) -> No
     )
 
     assert response.status_code == 409
-    assert response.json()["error"]["code"] == "DUPLICATE_CUSTOMER"
+    assert response.json()["code"] == "DUPLICATE_CUSTOMER"

@@ -100,5 +100,5 @@ def test_invalid_pagination_parameters_are_rejected(client, auth_headers) -> Non
     page_size = client.get("/api/v1/customers?page_size=101", headers=headers)
 
     assert page.status_code == 400
-    assert page.json()["error"]["code"] == "VALIDATION_ERROR"
+    assert page.json()["code"] == "VALIDATION_ERROR"
     assert page_size.status_code == 400
