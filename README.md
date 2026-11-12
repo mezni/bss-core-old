@@ -151,7 +151,7 @@ All errors use the standardized envelope
 | S01 | Identity & Access foundation | Complete (JWT + RBAC) |
 | S02 | Customer Management | Complete (67 tasks) |
 | S03 | Order Management | Complete for MVP workflows |
-| S04 | Shipment Management | Complete for MVP workflows (create + status/lifecycle updates; list/UI deferred) |
+| S04 | Shipment Management | Complete for MVP workflows (create + status/lifecycle updates + list; UI deferred) |
 | S05 | Billing Management | Complete for MVP workflows (invoice + payment; update/UI deferred) |
 | S06 | Dashboard & Reporting | Partial (stored metrics and reporting periods) |
 | S07 | Integration & MVP Release | Complete for MVP workflows |
