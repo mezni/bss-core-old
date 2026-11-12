@@ -6,7 +6,11 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from .exceptions import InvalidTransition, ShipmentValidationError
+from .exceptions import (
+    InvalidTransition,
+    ShipmentConflictError,
+    ShipmentValidationError,
+)
 from .value_objects import ShipmentStatus
 
 
@@ -46,6 +50,28 @@ class Shipment:
             updated_at=now,
             version=1,
         )
+
+    def update_carrier(self, carrier_name: str) -> None:
+        """Update the carrier while the shipment is still pending."""
+        if self.status == ShipmentStatus.DELIVERED:
+            raise InvalidTransition(
+                self.status.value,
+                self.status.value,
+                "Shipments in delivered status cannot be modified",
+            )
+        if self.status != ShipmentStatus.PENDING:
+            raise ShipmentConflictError(
+                "Carrier name can only be updated while the shipment is pending"
+            )
+        if not carrier_name or not carrier_name.strip():
+            raise ShipmentValidationError("Carrier name cannot be empty")
+
+        normalized = carrier_name.strip()
+        if normalized == self.carrier_name:
+            return
+        self.carrier_name = normalized
+        self.updated_at = datetime.now(UTC)
+        self.version += 1
 
     def transition_to(self, target_status: ShipmentStatus) -> None:
         """Enforce valid status transitions: pending -> in-transit -> delivered."""

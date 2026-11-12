@@ -137,3 +137,46 @@ def test_shipment_failure_preserves_order(
     assert fetched.status_code == 200, fetched.text
     assert fetched.json()["status"] == "confirmed"
     assert _shipment_count(e2e_session_factory) == before
+
+
+def test_shipment_lifecycle_pending_to_delivered(
+    client, customer_manage_headers, view_headers, admin_headers
+) -> None:
+    """Shipment lifecycle: pending → in-transit → delivered with versions."""
+    order = _create_confirmed_order(client, customer_manage_headers, view_headers)
+    created = client.post(
+        "/api/v1/shipments",
+        json={"order_id": order["id"], "carrier_name": "FastShip"},
+        headers=admin_headers,
+    )
+    assert created.status_code == 201, created.text
+    shipment = created.json()
+    assert shipment["status"] == "pending"
+    assert shipment["delivered_at"] is None
+
+    in_transit = client.patch(
+        f"/api/v1/shipments/{shipment['id']}",
+        json={"version": shipment["version"], "status": "in-transit"},
+        headers=admin_headers,
+    )
+    assert in_transit.status_code == 200, in_transit.text
+    assert in_transit.json()["status"] == "in-transit"
+    assert in_transit.json()["version"] == shipment["version"] + 1
+
+    delivered = client.patch(
+        f"/api/v1/shipments/{shipment['id']}",
+        json={"version": in_transit.json()["version"], "status": "delivered"},
+        headers=admin_headers,
+    )
+    assert delivered.status_code == 200, delivered.text
+    assert delivered.json()["status"] == "delivered"
+    assert delivered.json()["delivered_at"] is not None
+    assert delivered.json()["version"] == in_transit.json()["version"] + 1
+
+    replayed = client.patch(
+        f"/api/v1/shipments/{shipment['id']}",
+        json={"version": delivered.json()["version"], "status": "in-transit"},
+        headers=admin_headers,
+    )
+    assert replayed.status_code == 409, replayed.text
+    assert replayed.json()["code"] == "INVALID_TRANSITION"

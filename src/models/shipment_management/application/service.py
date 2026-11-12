@@ -22,6 +22,8 @@ from ..domain.exceptions import (
     OrderNotFound,
     ShipmentDomainError,
     ShipmentNotFound,
+    ShipmentStaleUpdate,
+    ShipmentValidationError,
 )
 from ..domain.value_objects import ShipmentStatus
 from .dto import ShipmentDTO
@@ -76,15 +78,41 @@ class ShipmentService:
             raise ShipmentNotFound(f"Shipment {shipment_id} was not found")
         return ShipmentDTO.from_domain(shipment)
 
-    def update_status(self, shipment_id: str, status: str, version: int) -> ShipmentDTO:
-        """Update shipment status with version validation."""
+    def update_shipment(
+        self,
+        shipment_id: str,
+        version: int,
+        carrier_name: str | None = None,
+        status: str | None = None,
+    ) -> ShipmentDTO:
+        """Update carrier and/or status with optimistic concurrency control."""
         shipment = self.repository.get(shipment_id)
         if shipment is None:
             raise ShipmentNotFound(f"Shipment {shipment_id} was not found")
-        expected_version = shipment.version
-        try:
-            shipment.transition_to(ShipmentStatus(status))
-        except InvalidTransition as error:
-            raise InvalidTransition(shipment.status.value, status) from error
-        shipment = self.repository.update(shipment, expected_version=expected_version)
+        if version != shipment.version:
+            raise ShipmentStaleUpdate(version, shipment.version)
+        if carrier_name is None and status is None:
+            raise ShipmentValidationError(
+                "At least one of carrier_name or status must be provided"
+            )
+
+        if carrier_name is not None:
+            shipment.update_carrier(carrier_name)
+        if status is not None:
+            try:
+                target = ShipmentStatus(status)
+            except ValueError as error:
+                raise ShipmentValidationError(
+                    f"Unsupported shipment status: {status}"
+                ) from error
+            try:
+                shipment.transition_to(target)
+            except InvalidTransition as error:
+                raise InvalidTransition(shipment.status.value, status) from error
+
+        shipment = self.repository.update(shipment, expected_version=version)
         return ShipmentDTO.from_domain(shipment)
+
+    def update_status(self, shipment_id: str, status: str, version: int) -> ShipmentDTO:
+        """Update shipment status with version validation."""
+        return self.update_shipment(shipment_id, version=version, status=status)

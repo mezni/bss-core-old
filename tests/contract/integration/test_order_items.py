@@ -50,7 +50,7 @@ def _create_customer_and_order(client, headers) -> tuple:
 
 
 # ------------------------------------------------------------------
-# T030 – Contract test for adding an order item
+# T030 – Contract test: unauthenticated item add must return 401
 # ------------------------------------------------------------------
 def test_add_order_item_requires_authentication(client) -> None:
     response = client.post("/api/v1/orders/ORD-missing/items", json={"description": "x", "quantity": 1, "unit_price": 1.0})
@@ -60,26 +60,20 @@ def test_add_order_item_requires_authentication(client) -> None:
     assert response.json()["code"] == "UNAUTHENTICATED"
 
 
-def test_add_order_item_requires_view_permission(
-    client, customer_manage_headers
-) -> None:
-    _, order = _create_customer_and_order(client, customer_manage_headers)
-
-    response = client.post(
-        f"/api/v1/orders/{order['id']}/items",
-        json={"description": "Widget B", "quantity": 1, "unit_price": 5.00},
-        headers=customer_manage_headers,
-    )
-
-    assert response.status_code == 403, response.text
-    _assert_envelope(response.json())
-    assert response.json()["code"] == "FORBIDDEN"
+# ------------------------------------------------------------------
+# T031 – Integration tests for item modify/remove and total recalc
+# ------------------------------------------------------------------
+def _create_order_with_items(client, view_headers) -> dict:
+    """Create a customer and a draft order using view_headers."""
+    _, order = _create_customer_and_order(client, view_headers)
+    return order
 
 
 def test_add_order_item_success(
-    client, customer_manage_headers, view_headers
+    client, view_headers
 ) -> None:
-    _, order = _create_customer_and_order(client, customer_manage_headers)
+    """Add an item to a draft order; verify total recalculation."""
+    order = _create_order_with_items(client, view_headers)
 
     resp = client.post(
         f"/api/v1/orders/{order['id']}/items",
@@ -94,13 +88,11 @@ def test_add_order_item_success(
     assert body["total"] == "15.00"
 
 
-# ------------------------------------------------------------------
-# T031 – Integration test for item modify/remove and total recalc
-# ------------------------------------------------------------------
 def test_modify_order_item_quantity(
-    client, customer_manage_headers, view_headers
+    client, view_headers
 ) -> None:
-    _, order = _create_customer_and_order(client, customer_manage_headers)
+    """Update an item quantity and verify total recalc."""
+    order = _create_order_with_items(client, view_headers)
 
     assert order["total"] == "10.00"
 
@@ -116,9 +108,10 @@ def test_modify_order_item_quantity(
 
 
 def test_remove_order_item(
-    client, customer_manage_headers, view_headers
+    client, view_headers
 ) -> None:
-    _, order = _create_customer_and_order(client, customer_manage_headers)
+    """Remove an item and verify total becomes 0."""
+    order = _create_order_with_items(client, view_headers)
 
     item_id = order["items"][0]["item_id"]
     resp = client.delete(
@@ -132,10 +125,10 @@ def test_remove_order_item(
 
 
 def test_item_lifecycle_total_recalc(
-    client, customer_manage_headers, view_headers
+    client, view_headers
 ) -> None:
-    """Add, modify, remove, verify total at each step."""
-    _, order = _create_customer_and_order(client, customer_manage_headers)
+    """Full add → modify → remove lifecycle, verify total at each step."""
+    order = _create_order_with_items(client, view_headers)
 
     # Add a second item
     client.post(

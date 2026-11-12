@@ -105,3 +105,187 @@ def test_error_envelope_shape(
     body = response.json()
     assert "id" in body
     assert "tracking_reference" in body
+
+
+def _create_shipment(
+    client, customer_manage_headers, view_headers, admin_headers
+) -> dict:
+    order = _confirmed_order(client, customer_manage_headers, view_headers)
+    response = client.post(
+        "/api/v1/shipments",
+        json=_payload(order["id"]),
+        headers=admin_headers,
+    )
+    assert response.status_code == 201, response.text
+    return response.json()
+
+
+def test_update_shipment_requires_authentication(client) -> None:
+    response = client.patch(
+        "/api/v1/shipments/SHIP-missing", json={"version": 1, "status": "in-transit"}
+    )
+
+    assert response.status_code == 401
+    _assert_envelope(response.json())
+    assert response.json()["code"] == "UNAUTHENTICATED"
+
+
+def test_update_shipment_requires_admin_permission(
+    client, customer_manage_headers, view_headers, admin_headers
+) -> None:
+    shipment = _create_shipment(
+        client, customer_manage_headers, view_headers, admin_headers
+    )
+
+    response = client.patch(
+        f"/api/v1/shipments/{shipment['id']}",
+        json={"version": 1, "status": "in-transit"},
+        headers=customer_manage_headers,
+    )
+
+    assert response.status_code == 403
+    _assert_envelope(response.json())
+    assert response.json()["code"] == "FORBIDDEN"
+
+
+def test_update_carrier_while_pending(
+    client, customer_manage_headers, view_headers, admin_headers
+) -> None:
+    shipment = _create_shipment(
+        client, customer_manage_headers, view_headers, admin_headers
+    )
+
+    response = client.patch(
+        f"/api/v1/shipments/{shipment['id']}",
+        json={"version": shipment["version"], "carrier_name": "SlowShip"},
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["carrier_name"] == "SlowShip"
+    assert body["status"] == "pending"
+    assert body["version"] == shipment["version"] + 1
+
+
+def test_update_shipment_rejects_stale_version(
+    client, customer_manage_headers, view_headers, admin_headers
+) -> None:
+    shipment = _create_shipment(
+        client, customer_manage_headers, view_headers, admin_headers
+    )
+
+    response = client.patch(
+        f"/api/v1/shipments/{shipment['id']}",
+        json={"version": shipment["version"] + 1, "status": "in-transit"},
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["code"] == "STALE_UPDATE"
+    assert f"expected_version={shipment['version'] + 1}" in body["message"]
+    assert f"current_version={shipment['version']}" in body["message"]
+
+
+def test_update_shipment_rejects_invalid_transition(
+    client, customer_manage_headers, view_headers, admin_headers
+) -> None:
+    shipment = _create_shipment(
+        client, customer_manage_headers, view_headers, admin_headers
+    )
+
+    response = client.patch(
+        f"/api/v1/shipments/{shipment['id']}",
+        json={"version": shipment["version"], "status": "delivered"},
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 409, response.text
+    assert response.json()["code"] == "INVALID_TRANSITION"
+
+
+def test_delivery_confirmation_sets_delivered_at(
+    client, customer_manage_headers, view_headers, admin_headers
+) -> None:
+    shipment = _create_shipment(
+        client, customer_manage_headers, view_headers, admin_headers
+    )
+
+    in_transit = client.patch(
+        f"/api/v1/shipments/{shipment['id']}",
+        json={"version": shipment["version"], "status": "in-transit"},
+        headers=admin_headers,
+    )
+    assert in_transit.status_code == 200, in_transit.text
+    assert in_transit.json()["status"] == "in-transit"
+    assert in_transit.json()["delivered_at"] is None
+
+    delivered = client.patch(
+        f"/api/v1/shipments/{shipment['id']}",
+        json={"version": in_transit.json()["version"], "status": "delivered"},
+        headers=admin_headers,
+    )
+    assert delivered.status_code == 200, delivered.text
+    body = delivered.json()
+    assert body["status"] == "delivered"
+    assert body["delivered_at"] is not None
+    assert body["version"] == in_transit.json()["version"] + 1
+
+
+def test_delivered_shipment_cannot_be_modified(
+    client, customer_manage_headers, view_headers, admin_headers
+) -> None:
+    shipment = _create_shipment(
+        client, customer_manage_headers, view_headers, admin_headers
+    )
+    in_transit = client.patch(
+        f"/api/v1/shipments/{shipment['id']}",
+        json={"version": shipment["version"], "status": "in-transit"},
+        headers=admin_headers,
+    )
+    delivered = client.patch(
+        f"/api/v1/shipments/{shipment['id']}",
+        json={"version": in_transit.json()["version"], "status": "delivered"},
+        headers=admin_headers,
+    )
+    assert delivered.status_code == 200, delivered.text
+
+    response = client.patch(
+        f"/api/v1/shipments/{shipment['id']}",
+        json={"version": delivered.json()["version"], "carrier_name": "LateShip"},
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 409, response.text
+    assert response.json()["code"] == "INVALID_TRANSITION"
+
+
+def test_update_shipment_not_found(
+    client, admin_headers
+) -> None:
+    response = client.patch(
+        "/api/v1/shipments/SHIP-missing",
+        json={"version": 1, "status": "in-transit"},
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 404, response.text
+    assert response.json()["code"] == "SHIPMENT_NOT_FOUND"
+
+
+def test_update_shipment_requires_a_change(
+    client, customer_manage_headers, view_headers, admin_headers
+) -> None:
+    shipment = _create_shipment(
+        client, customer_manage_headers, view_headers, admin_headers
+    )
+
+    response = client.patch(
+        f"/api/v1/shipments/{shipment['id']}",
+        json={"version": shipment["version"]},
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 400, response.text
+    assert response.json()["code"] == "VALIDATION_ERROR"

@@ -19,6 +19,7 @@ class ShipmentDTO:
     created_at: str
     updated_at: str
     version: int
+    delivered_at: str | None = None
 
     @staticmethod
     def from_domain(shipment: Shipment) -> ShipmentDTO:
@@ -31,4 +32,9 @@ class ShipmentDTO:
             created_at=shipment.created_at.isoformat(),
             updated_at=shipment.updated_at.isoformat(),
             version=shipment.version,
+            delivered_at=(
+                shipment.delivered_at.isoformat()
+                if shipment.delivered_at is not None
+                else None
+            ),
         )

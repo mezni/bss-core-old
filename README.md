@@ -137,7 +137,7 @@ for the full contract and consumer port.
 | Workflow | Endpoint | Permission |
 |---|---|---|
 | Customer → Order | `POST /api/v1/orders`, `PATCH /api/v1/orders/{id}/transitions/confirm` | `user:view` |
-| Order → Shipment | `POST /api/v1/shipments` | `user:admin` |
+| Order → Shipment | `POST /api/v1/shipments`, `PATCH /api/v1/shipments/{shipment_id}` | `user:admin` |
 | Order → Invoice | `POST /api/v1/invoices`, `GET /api/v1/invoices` | `user:billing` (write), `user:view` (read) |
 | Invoice → Payment | `POST /api/v1/payments` | `user:billing` |
 
@@ -151,7 +151,7 @@ All errors use the standardized envelope
 | S01 | Identity & Access foundation | Complete (JWT + RBAC) |
 | S02 | Customer Management | Complete (67 tasks) |
 | S03 | Order Management | Complete for MVP workflows |
-| S04 | Shipment Management | Complete for MVP workflows (create + status; list/UI deferred) |
+| S04 | Shipment Management | Complete for MVP workflows (create + status/lifecycle updates; list/UI deferred) |
 | S05 | Billing Management | Complete for MVP workflows (invoice + payment; update/UI deferred) |
 | S06 | Dashboard & Reporting | Partial (stored metrics and reporting periods) |
 | S07 | Integration & MVP Release | Complete for MVP workflows |
