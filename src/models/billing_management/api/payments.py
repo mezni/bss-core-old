@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from src.models.identity_access.api.dependencies import (
     require_user_view,
@@ -51,3 +51,22 @@ def create_payment(payload: PaymentCreate, service: BillingServiceDep) -> Paymen
 def get_payment(payment_id: str, service: BillingServiceDep) -> PaymentDTO:
     """Retrieve a payment by ID."""
     return service.get_payment(payment_id)
+
+
+@router.get(
+    "",
+    summary="List payments",
+    dependencies=[Depends(require_user_view)],
+)
+def list_payments(
+    service: BillingServiceDep,
+    invoice_id: str | None = Query(None),
+    status: str | None = Query(None),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+) -> dict:
+    """List payments with optional filters (by invoice, status, pagination)."""
+    items, total = service.list_payments(
+        invoice_id=invoice_id, status=status, page=page, page_size=page_size
+    )
+    return {"items": items, "page": page, "page_size": page_size, "total": total}

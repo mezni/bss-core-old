@@ -125,6 +125,20 @@ class BillingService:
         )
         return [InvoiceDTO.from_domain(invoice) for invoice in invoices], total
 
+    
+    def list_payments(
+        self,
+        customer_id: str | None = None,
+        invoice_id: str | None = None,
+        status: str | None = None,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> tuple[list[PaymentDTO], int]:
+        """List payments with optional filters."""
+        payments, total = self.payments.list(
+            customer_id=customer_id, invoice_id=invoice_id, status=status, page=page, page_size=page_size
+        )
+        return [PaymentDTO.from_domain(p) for p in payments], total
     def mark_invoice_paid(self, invoice_id: str, payment_method: str) -> InvoiceDTO:
         """Mark an invoice as paid (PATCH status transition)."""
         invoice = self._get_invoice(invoice_id)
