@@ -126,7 +126,7 @@ def render_dashboard_page() -> None:
             end_date = st.date_input("End", value=None)
 
         # Refresh control
-        render_refresh_control()
+        render_refresh_control(key="refresh_now_sidebar")
 
     # Fetch metrics
     start_date_obj = None
@@ -166,7 +166,7 @@ def render_dashboard_page() -> None:
         refresh_time = datetime.fromtimestamp(last_refreshed).strftime("%Y-%m-%d %H:%M:%S")
         st.caption(f"Last refreshed: {refresh_time}")
 
-    render_refresh_control()
+    render_refresh_control(key="refresh_now_main")
 
     # Category tabs
     st.markdown("### Metrics by Category")

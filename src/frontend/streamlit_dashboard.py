@@ -136,9 +136,9 @@ def render_role_indicator() -> None:
     st.sidebar.caption(role_descriptions.get(role, ""))
 
 
-def render_refresh_control() -> None:
+def render_refresh_control(key: str = "refresh_now") -> None:
     """Render the manual refresh control."""
-    if st.sidebar.button("🔄 Refresh Now", use_container_width=True):
+    if st.sidebar.button("🔄 Refresh Now", use_container_width=True, key=key):
         # Force refresh by clearing cache timestamp
         st.session_state["last_refresh"] = 0
         st.rerun()
@@ -233,7 +233,7 @@ def render() -> None:
             end_date = st.date_input("End", value=None)
 
         # Refresh control
-        render_refresh_control()
+        render_refresh_control(key="refresh_now_sidebar")
 
     # Fetch metrics
     start_date_obj = None
@@ -278,7 +278,7 @@ def render() -> None:
         refresh_time = datetime.fromtimestamp(last_refreshed).strftime("%Y-%m-%d %H:%M:%S")
         st.caption(f"Last refreshed: {refresh_time}")
     
-    render_refresh_control()
+    render_refresh_control(key="refresh_now_main")
 
 
 if __name__ == "__main__":
