@@ -6,12 +6,10 @@ with date filtering, role-based access, and chart visualizations.
 
 from __future__ import annotations
 
-import asyncio
 import json
-import logging
 import os
 import time
-from datetime import datetime, date, timedelta
+from datetime import date, datetime
 
 import httpx
 import streamlit as st
@@ -260,7 +258,7 @@ def render() -> None:
 
     # Category tabs
     tabs = st.tabs(CATEGORIES + ["All"])
-    for i, (tab_name, tab) in enumerate(zip(CATEGORIES + ["All"], tabs)):
+    for _, tab in zip(CATEGORIES + ["All"], tabs, strict=True):
         with tab:
             filtered_category = category_value if category_value else None
             tab_metrics_data = fetch_metrics(

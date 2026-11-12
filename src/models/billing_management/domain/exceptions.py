@@ -1,4 +1,4 @@
-"""Domain exceptions for billing management (invoices and payments)."""
+"""Domain exceptions for billing management."""
 
 from __future__ import annotations
 
@@ -19,6 +19,11 @@ class BillingDomainError(Exception):
 
 class InvoiceNotFound(BillingDomainError):
     code = "INVOICE_NOT_FOUND"
+    http_status = 404
+
+
+class OrderNotFound(BillingDomainError):
+    code = "ORDER_NOT_FOUND"
     http_status = 404
 
 

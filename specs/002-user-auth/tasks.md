@@ -22,7 +22,7 @@ and testing of each story. All tasks follow the strict checklist format.
 -[X] T001 Create project directory structure and pyproject.toml
 -[X] T002 Initialize Python project with uv and core dependencies 
   (FastAPI, SQLAlchemy 2.x, pytest, uv, Pydantic, Argon2id, JWT)
-- [ ] T003 [P] Configure Ruff linting and formatting configuration (ruff.toml)
+- [x] T003 [P] Configure Ruff linting and formatting configuration (ruff.toml)
 
 ---
 
@@ -123,16 +123,16 @@ with clear separation, and routes can be added without crossing layer boundaries
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T023 [P] Documentation updates in docs/ (quickstart.md, data-model.md references)
+- [x] T023 [P] Documentation updates in docs/ (quickstart.md, data-model.md references)
 -[X] T021 Code cleanup and refactoring across all completed stories
 -[X] T022 [P] Performance optimization across all stories 
   (foundation setup within defined timeframe per SC-001, health check within 
   SLA per SC-002)
-- [ ] T023 [P] Additional unit tests (if requested) in tests/unit/
-- [ ] T024 [P] Security hardening (JWT validation, Argon2id password verification, 
+- [x] T023 [P] Additional unit tests (if requested) in tests/unit/
+- [x] T024 [P] Security hardening (JWT validation, Argon2id password verification, 
   RBAC least-privilege per constitution Section 9)
 - [ ] T025 [P] Run quickstart.md validation checklists
-- [ ] T026 [P] Final integration test across all user stories
+- [x] T026 [P] Final integration test across all user stories
 
 ---
 

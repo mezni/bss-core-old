@@ -20,12 +20,7 @@ class InvoiceORM(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     total_amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     customer_id: Mapped[str] = mapped_column(String(36), nullable=False)
-    order_id: Mapped[str] = mapped_column(
-        String(36),
-        ForeignKey("orders.id", ondelete="CASCADE"),
-        nullable=False,
-        unique=True,
-    )
+    order_id: Mapped[str] = mapped_column(String(36), nullable=False, unique=True)
     billing_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     due_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     payment_date: Mapped[datetime | None] = mapped_column(

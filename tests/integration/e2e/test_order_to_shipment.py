@@ -2,20 +2,19 @@
 
 Create a confirmed order → create shipment → shipment with unique tracking number
 and order status ``shipped``. Shipment creation on a draft order returns 409 CONFLICT
-and leaves the order ``confirmed``.
+and leaves the order unchanged. Failure in the shipment branch leaves the order
+``confirmed``.
 """
 
 from __future__ import annotations
 
 from sqlalchemy import func, select
 
-from src.models.order_management.infrastructure.orm import OrderORM
 from src.models.shipment_management.infrastructure.orm import ShipmentORM
 
 
-def _create_confirmed_order(client, customer_manage_headers, view_headers) -> dict:
-    """Create and confirm an order; return the confirmed order dict."""
-    # Create customer
+def _create_customer(client, customer_manage_headers) -> dict:
+    """Create a customer and return it."""
     customer_resp = client.post(
         "/api/v1/customers",
         json={
@@ -28,21 +27,28 @@ def _create_confirmed_order(client, customer_manage_headers, view_headers) -> di
         headers=customer_manage_headers,
     )
     assert customer_resp.status_code == 201, customer_resp.text
-    customer = customer_resp.json()
+    return customer_resp.json()
 
-    # Create order with items
+
+def _create_draft_order(client, customer_id, headers) -> dict:
+    """Create a draft order with a single item."""
     order_resp = client.post(
         "/api/v1/orders",
         json={
-            "customer_id": customer["id"],
+            "customer_id": customer_id,
             "items": [{"description": "Widget A", "quantity": 1, "unit_price": 10.00}],
         },
-        headers=view_headers,
+        headers=headers,
     )
     assert order_resp.status_code == 201, order_resp.text
-    order = order_resp.json()
+    return order_resp.json()
 
-    # Confirm the order
+
+def _create_confirmed_order(client, customer_manage_headers, view_headers) -> dict:
+    """Create and confirm an order; return the confirmed order dict."""
+    customer = _create_customer(client, customer_manage_headers)
+    order = _create_draft_order(client, customer["id"], view_headers)
+
     confirm_resp = client.patch(
         f"/api/v1/orders/{order['id']}/transitions/confirm",
         headers=view_headers,
@@ -51,30 +57,32 @@ def _create_confirmed_order(client, customer_manage_headers, view_headers) -> di
     confirmed = confirm_resp.json()
     assert confirmed["status"] == "confirmed"
     assert confirmed["version"] == 2
-
     return confirmed
 
 
+def _shipment_count(session_factory) -> int:
+    """Count shipment rows in the test database."""
+    with session_factory() as session:
+        return session.scalar(select(func.count()).select_from(ShipmentORM)) or 0
+
+
 def test_order_to_shipment_workflow(
-    client, customer_manage_headers, view_headers, e2e_session_factory
+    client, customer_manage_headers, view_headers, admin_headers, e2e_session_factory
 ) -> None:
     """Full order→shipment e2e: confirmed order → shipment → status shipped."""
     order = _create_confirmed_order(client, customer_manage_headers, view_headers)
 
-    # Create shipment (requires user:admin per T027; view_headers may currently
-    # yield 403 until admin enforcement is wired, but the test asserts the
-    # business flow once fully complete).
     ship_resp = client.post(
         "/api/v1/shipments",
-        json={"carrier_name": "FastShip"},
-        headers=view_headers,
+        json={"order_id": order["id"], "carrier_name": "FastShip"},
+        headers=admin_headers,
     )
     assert ship_resp.status_code == 201, ship_resp.text
     shipment = ship_resp.json()
     assert shipment["tracking_reference"].startswith("SHIP-")
     assert shipment["carrier_name"] == "FastShip"
     assert shipment["order_id"] == order["id"]
-    assert shipment["status"] == "shipped"
+    assert shipment["status"] == "pending"
 
     # Verify order status is now shipped
     fetched = client.get(f"/api/v1/orders/{order['id']}", headers=view_headers)
@@ -83,21 +91,49 @@ def test_order_to_shipment_workflow(
     assert persisted["status"] == "shipped"
     assert len(persisted["items"]) == 1
 
+    assert _shipment_count(e2e_session_factory) == 1
+
 
 def test_shipment_draft_order_rejected(
-    client, view_headers
+    client, customer_manage_headers, view_headers, admin_headers
 ) -> None:
     """Shipment for a draft order must return 409 CONFLICT."""
-    response = client.post(
+    customer = _create_customer(client, customer_manage_headers)
+    draft_order = _create_draft_order(client, customer["id"], view_headers)
+    assert draft_order["status"] == "draft"
+
+    ship_resp = client.post(
         "/api/v1/shipments",
-        json={"carrier_name": "FastShip"},
-        headers=view_headers,
+        json={"order_id": draft_order["id"], "carrier_name": "FastShip"},
+        headers=admin_headers,
     )
-    assert response.status_code == 409, f"Expected 409, got {response.status_code}: {response.text}"
-    body = response.json()
-    assert body["code"] == "CONFLICT"
-    assert body["error"] == "conflict"
+    assert ship_resp.status_code == 409, ship_resp.text
+    body = ship_resp.json()
+    assert body["code"] == "ORDER_NOT_CONFIRMED"
+    assert body["error"] == "order_not_confirmed"
 
 
-# Fixture references are provided by tests/integration/e2e/conftest.py
-# (view_headers, customer_manage_headers)
+def test_shipment_failure_preserves_order(
+    client,
+    customer_manage_headers,
+    view_headers,
+    admin_headers,
+    e2e_session_factory,
+) -> None:
+    """A shipment creation failure leaves the order ``confirmed`` (T028)."""
+    order = _create_confirmed_order(client, customer_manage_headers, view_headers)
+    before = _shipment_count(e2e_session_factory)
+
+    # A blank carrier name passes schema validation but fails domain validation,
+    # exercising the failure branch after the order precondition check.
+    ship_resp = client.post(
+        "/api/v1/shipments",
+        json={"order_id": order["id"], "carrier_name": "   "},
+        headers=admin_headers,
+    )
+    assert ship_resp.status_code == 400, ship_resp.text
+
+    fetched = client.get(f"/api/v1/orders/{order['id']}", headers=view_headers)
+    assert fetched.status_code == 200, fetched.text
+    assert fetched.json()["status"] == "confirmed"
+    assert _shipment_count(e2e_session_factory) == before

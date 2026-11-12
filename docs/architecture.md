@@ -458,3 +458,23 @@ The architecture is accepted when:
 - [ ] Data generation has a defined architectural boundary.
 - [ ] Deployment model is documented.
 - [ ] Architecture constraints are available to the coding agent.
+
+---
+
+## 13. S07 consolidated runtime
+
+`src/api/health.py` is the single composition root. It mounts the customer,
+order, shipment, dashboard, invoice, and payment routers and registers the
+standardized error handlers.
+
+Cross-module workflows use application adapters rather than ORM access:
+
+```text
+order_management  <-- OrderModuleAdapter -- shipment_management
+order_management  <-- OrderModuleAdapter -- billing_management
+customer_management <-- CustomerEligibilityAdapter -- order_management
+```
+
+Each module owns its SQLAlchemy `Base`/metadata. Migrations import every
+module's metadata so `alembic upgrade head` creates the full schema in FK
+dependency order: customers → orders → shipments → invoices → payments.

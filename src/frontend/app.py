@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import sys
+from datetime import datetime
 from pathlib import Path
 
 import httpx
@@ -22,20 +23,20 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.frontend.streamlit_dashboard import (
-    fetch_metrics,
-    get_role_tier_from_token,
-    CATEGORIES,
-    ROLE_TIERS,
-    render_role_indicator,
-    render_refresh_control,
-)
 from src.frontend.customer.api_client import CustomerAPIClient  # noqa: E402
 from src.frontend.customer.form_page import (  # noqa: E402
     render_create_page,
     render_edit_page,
 )
 from src.frontend.customer.list_page import render_list_page  # noqa: E402
+from src.frontend.streamlit_dashboard import (
+    CATEGORIES,
+    ROLE_TIERS,
+    fetch_metrics,
+    get_role_tier_from_token,
+    render_refresh_control,
+    render_role_indicator,
+)
 
 st.set_page_config(
     page_title="BSS Core - Business Management",
@@ -189,12 +190,6 @@ def render_dashboard_page() -> None:
 
 def render_customer_page() -> None:
     """Render the customer management page."""
-    from src.frontend.customer.api_client import CustomerAPIClient  # noqa: E402
-    from src.frontend.customer.form_page import (  # noqa: E402
-        render_create_page,
-        render_edit_page,
-    )
-    from src.frontend.customer.list_page import render_list_page  # noqa: E402
 
     st.title("👥 Customer Management")
     st.markdown("Manage customer records and relationships.")
@@ -231,8 +226,6 @@ def render_customer_page() -> None:
 
 def render_new_customer_page() -> None:
     """Render the new customer creation page."""
-    from src.frontend.customer.api_client import CustomerAPIClient  # noqa: E402
-    from src.frontend.customer.form_page import render_create_page  # noqa: E402
 
     st.title("🆕 New Customer")
     st.markdown("Create a new customer record.")
@@ -257,8 +250,12 @@ def render_settings_page() -> None:
     `BSS_API_TOKEN` (or paste a token above) for authenticated calls.
     """
     )
-    api_url = st.text_input("API URL", value="http://localhost:8000")
-    api_token = st.text_input("API Token", type="password", value=os.environ.get("BSS_API_TOKEN", ""))
+    st.text_input("API URL", value="http://localhost:8000")
+    st.text_input(
+        "API Token",
+        type="password",
+        value=os.environ.get("BSS_API_TOKEN", ""),
+    )
     st.caption("Configuration stored in session for this session only.")
 
 

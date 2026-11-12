@@ -6,14 +6,11 @@ from datetime import datetime
 
 from sqlalchemy import (
     DateTime,
-    ForeignKey,
     Index,
     Integer,
     String,
 )
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-
-from ..domain.exceptions import ShipmentDomainError
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):
@@ -29,15 +26,11 @@ class ShipmentORM(Base):
         String(40), unique=True, nullable=False
     )
     carrier_name: Mapped[str] = mapped_column(String(120), nullable=False)
-    order_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("orders.id", ondelete="CASCADE"), nullable=False
-    )
+    order_id: Mapped[str] = mapped_column(String(36), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     delivered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
-
-    order: Mapped["OrderORM"] = relationship(back_populates="shipments", lazy="selectin")
 
     __table_args__ = (
         Index("ix_shipments_order", "order_id"),

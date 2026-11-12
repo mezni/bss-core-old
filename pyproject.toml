@@ -44,16 +44,17 @@ markers = [
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+extend-exclude = [".agents"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
 
 [tool.ruff.lint.per-file-ignores]
 "src/models/customer_management/presentation/*" = ["F401"]
-"src/models/customer_management/api/*" = ["B008"]
+"src/models/*/api/*" = ["B008"]
+"src/presentation/api/*" = ["B008"]
 "src/frontend/customer/*" = ["E402"]
+"src/frontend/app.py" = ["E402"]
 
 [tool.uv.workspace]
-members = [
-    "src/shipment",
-]
+members = []

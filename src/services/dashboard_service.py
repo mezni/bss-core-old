@@ -1,16 +1,13 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import (
-    and_,
     or_,
     select,
-    func,
 )
 
 from src.models.dashboard_metric import DashboardMetric
-from src.models.reporting_period import ReportingPeriod
 
 
 class DashboardService:
@@ -137,14 +134,14 @@ class DashboardService:
     def get_categories(self):
         """Get distinct metric categories."""
         session = self._get_session()
-        from sqlalchemy import select, distinct
+        from sqlalchemy import distinct, select
         result = session.execute(select(distinct(DashboardMetric.category)))
         return [row[0] for row in result.fetchall()]
 
     def get_role_tiers(self):
         """Get distinct role tiers."""
         session = self._get_session()
-        from sqlalchemy import select, distinct
+        from sqlalchemy import distinct, select
         result = session.execute(
             select(distinct(DashboardMetric.role_tier).where(DashboardMetric.role_tier.isnot(None)))
         )

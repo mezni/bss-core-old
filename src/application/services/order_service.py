@@ -3,13 +3,13 @@ from __future__ import annotations
 import uuid
 from decimal import Decimal
 
-from src.domain.models import Order, OrderItem, Customer
+from src.domain.models import Customer, Order, OrderItem
 
 TAX_RATE = Decimal("0.10")  # 10% fixed tax rate for S03 MVP
 
 
 class OrderService:
-    """Domain-layer use case: create order with customer validation, item count check, draft status assignment."""
+    """Create an order with customer validation and draft status assignment."""
 
     def create_order(
         self,

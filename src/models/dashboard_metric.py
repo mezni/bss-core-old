@@ -5,7 +5,6 @@ from datetime import UTC, datetime
 from sqlalchemy import (
     Column,
     DateTime,
-    Integer,
     Numeric,
     String,
 )

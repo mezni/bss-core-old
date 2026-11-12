@@ -1,8 +1,11 @@
 """Unit tests for order management domain entities."""
 
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
+
+import pytest
 
 from src.models.order_management.domain.entities import Order, OrderItem
+from src.models.order_management.domain.exceptions import InvalidOrder, OrderItemError
 from src.models.order_management.domain.value_objects import OrderStatus
 
 
@@ -25,10 +28,10 @@ def test_order_item_creation():
 
 def test_order_item_validation_minimum_quantity():
     """Test OrderItem rejects quantity <= 0."""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     from src.models.order_management.domain.entities import OrderItem
-    try:
+    with pytest.raises(OrderItemError):
         OrderItem(
             id="item-002",
             description="Test",
@@ -37,17 +40,14 @@ def test_order_item_validation_minimum_quantity():
             line_total=0.00,
             created_at=datetime.now(UTC),
         )
-        assert False, "Should have raised an error"
-    except Exception:
-        assert True
 
 
 def test_order_item_validation_max_price():
     """Test OrderItem rejects negative unit price."""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     from src.models.order_management.domain.entities import OrderItem
-    try:
+    with pytest.raises(OrderItemError):
         OrderItem(
             id="item-003",
             description="Test",
@@ -56,14 +56,10 @@ def test_order_item_validation_max_price():
             line_total=0.00,
             created_at=datetime.now(UTC),
         )
-        assert False, "Should have raised an error"
-    except Exception:
-        assert True
 
 
 def test_order_creation():
     """Test Order can be created with valid data."""
-    now = datetime.now(UTC)
     order = Order.create(
         customer_id="customer-001",
         items=[
@@ -81,17 +77,17 @@ def test_order_creation():
 def test_order_requires_at_least_one_item():
     """Test Order creation fails without items."""
     from src.models.order_management.domain.entities import Order
-    try:
+    with pytest.raises(InvalidOrder):
         Order.create(customer_id="customer-001", items=[])
-        assert False, "Should have raised InvalidOrder"
-    except Exception:
-        assert True
 
 
 def test_order_status_transitions():
     """Test order status transitions."""
-    order = Order.create(customer_id="customer-001", items=[{"description": "Widget", "quantity": 1, "unit_price": 10.00}])
-    
+    order = Order.create(
+        customer_id="customer-001",
+        items=[{"description": "Widget", "quantity": 1, "unit_price": 10.00}],
+    )
+
     # Test confirm transition
     order.confirm()
     assert order.status.value == "confirmed"
@@ -107,7 +103,10 @@ def test_order_status_transitions():
 
 def test_order_cancellation():
     """Test order can be cancelled from draft state."""
-    order = Order.create(customer_id="customer-001", items=[{"description": "Widget", "quantity": 1, "unit_price": 10.00}])
+    order = Order.create(
+        customer_id="customer-001",
+        items=[{"description": "Widget", "quantity": 1, "unit_price": 10.00}],
+    )
     assert order.status == OrderStatus.DRAFT
     
     order.cancel()
@@ -117,14 +116,14 @@ def test_order_cancellation():
 
 def test_order_reversion_terminal():
     """Test that cancelled orders cannot be reverted."""
-    order = Order.create(customer_id="customer-001", items=[{"description": "Widget", "quantity": 1, "unit_price": 10.00}])
+    order = Order.create(
+        customer_id="customer-001",
+        items=[{"description": "Widget", "quantity": 1, "unit_price": 10.00}],
+    )
     order.cancel()
-    
-    try:
+
+    with pytest.raises(InvalidOrder):
         order.revert()
-        assert False, "Should have raised InvalidOrder for terminal state"
-    except Exception:
-        assert True
 
 
 def test_order_total_recalculation():

@@ -87,7 +87,8 @@ class OrderTransitionService:
         if order.status != "draft":
             return (
                 False,
-                f"Cannot cancel order in {order.status} status. Only draft orders can be cancelled.",
+                f"Cannot cancel order in {order.status} status. "
+                "Only draft orders can be cancelled.",
             )
 
         # Execute transition

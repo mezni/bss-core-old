@@ -13,7 +13,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from src.domain.database import get_db
-from src.models.dashboard_metric import DashboardMetric
 from src.services.dashboard_service import DashboardService
 
 router = APIRouter(prefix="/api/v1/dashboard", tags=["dashboard"])
@@ -26,7 +25,10 @@ def get_dashboard_service(db: Session = Depends(get_db)) -> DashboardService:
 @router.get(
     "/metrics",
     summary="Retrieve dashboard metrics",
-    description="Get aggregated operational metrics for the dashboard with filtering by category, role tier, period, and date range",
+    description=(
+        "Get aggregated operational metrics for the dashboard with filtering "
+        "by category, role tier, period, and date range"
+    ),
 )
 def get_dashboard_metrics(
     category: str | None = Query(

@@ -1,14 +1,19 @@
-# BSS Core — S02 Customer Management
+# BSS Core — S07 Integration & MVP Release
 
 ## Overview
 
 **BSS Core** is a modular business management system. S01 delivers authenticated
 access control, role-based permissions, and module-based authorization. S02 adds
 **Customer Management**: customer identity, lifecycle, contacts, addresses,
-search, and a downstream eligibility contract.
+search, and a downstream eligibility contract. S03–S05 add orders, shipments,
+and billing; S07 wires them into four end-to-end workflows on a single FastAPI
+application.
 
-- **JWT authentication** with permission claims (`customer:view`, `customer:manage`)
-- **Argon2id password hashing** per constitution Section 9.2
+- **JWT bearer authentication** with permission claims (`user:view`,
+  `user:billing`, `user:admin`, plus module permissions such as
+  `customer:view`/`customer:manage`)
+- **Argon2id dependency available** for future credential storage (the MVP
+  validates externally minted JWTs; it does not expose login/password routes)
 - **Customer registry** for individuals and businesses with type-scoped uniqueness
 - **Optimistic concurrency** on every customer aggregate mutation
 - **Contacts and addresses** with single-primary rules
@@ -83,12 +88,25 @@ BSS_API_URL=http://localhost:8000 BSS_API_TOKEN=<jwt> \
 Set `BSS_JWT_SECRET` to the secret used by the identity service to sign tokens.
 The development fallback is not suitable for production.
 
+### Synthetic data
+
+```bash
+# Deterministic seed and configurable volumes (customers -> orders -> shipments
+# -> invoices -> payments); writes db/datagen-manifest.json
+uv run bss-datagen --seed 42 --customers 50 --orders 100
+```
+
 ### Tests and linting
 
 ```bash
 uv run pytest
 uv run ruff check src tests
 ```
+
+The end-to-end workflow evidence lives in `tests/integration/e2e/`
+(`test_customer_to_order.py`, `test_order_to_shipment.py`,
+`test_order_to_invoice.py`, `test_invoice_to_payment.py`,
+`test_clean_database_migrations.py`).
 
 ## Customer API
 
@@ -114,15 +132,39 @@ Every mutation increments the customer aggregate `version`. See
 `docs/customer-management.md` and `specs/003-customer-management/contracts/`
 for the full contract and consumer port.
 
+## Workflow APIs
+
+| Workflow | Endpoint | Permission |
+|---|---|---|
+| Customer → Order | `POST /api/v1/orders`, `PATCH /api/v1/orders/{id}/transitions/confirm` | `user:view` |
+| Order → Shipment | `POST /api/v1/shipments` | `user:admin` |
+| Order → Invoice | `POST /api/v1/invoices`, `GET /api/v1/invoices` | `user:billing` (write), `user:view` (read) |
+| Invoice → Payment | `POST /api/v1/payments` | `user:billing` |
+
+All errors use the standardized envelope
+`{"error": "<slug>", "message": "<human-readable>", "code": "<CODE>"}`.
+
 ## Implementation Status
 
 | Sprint | Scope | Status |
 |---|---|---|
-| S01 | Identity & Access foundation | Complete |
+| S01 | Identity & Access foundation | Complete (JWT + RBAC) |
 | S02 | Customer Management | Complete (67 tasks) |
+| S03 | Order Management | Complete for MVP workflows |
+| S04 | Shipment Management | Complete for MVP workflows (create + status; list/UI deferred) |
+| S05 | Billing Management | Complete for MVP workflows (invoice + payment; update/UI deferred) |
+| S06 | Dashboard & Reporting | Partial (stored metrics and reporting periods) |
+| S07 | Integration & MVP Release | Complete for MVP workflows |
 
 S02 includes unit, application, integration, contract, migration, and
 performance coverage. Run `uv run pytest` for the current suite.
+
+S07 Integration & MVP Release delivers four end-to-end workflows (customer-to-order,
+order-to-shipment, order-to-invoice, invoice-to-payment) with consolidated runtime,
+single FastAPI app (`src/api/health.py`), centralized PyJWT authorization
+(`user:view`/`user:billing`/`user:admin`), standardized error envelope
+`{"error", "message", "code"}`, deterministic data generator (`bss-datagen`), and
+E2E journey tests. Requirements quality checklist: `specs/008-integration-mvp/checklists/integration.md`.
 
 ## Key Decisions
 
@@ -140,12 +182,12 @@ The system is delivered across 7 sprints (S00–S07):
 
 - **S00** — Project Foundation
 - **S01** — Identity & Access
-- **S02** — Customer Management *(current)*
+- **S02** — Customer Management
 - **S03** — Order Management
 - **S04** — Shipment Management
 - **S05** — Billing Management
 - **S06** — Dashboard & Reporting
-- **S07** — Integration & MVP Release
+- **S07** — Integration & MVP Release *(current)*
 
 ## License
 

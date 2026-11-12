@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 
-class ShipmentStatus(str, Enum):
+class ShipmentStatus(StrEnum):
     PENDING = "pending"
     IN_TRANSIT = "in-transit"
     DELIVERED = "delivered"

@@ -22,6 +22,11 @@ class ShipmentNotFound(ShipmentDomainError):
     http_status = 404
 
 
+class OrderNotFound(ShipmentDomainError):
+    code = "ORDER_NOT_FOUND"
+    http_status = 404
+
+
 class ShipmentValidationError(ShipmentDomainError):
     code = "SHIPMENT_VALIDATION_ERROR"
     http_status = 400

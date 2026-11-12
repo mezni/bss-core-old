@@ -26,7 +26,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--seed",
         type=int,
         default=42,
-        help="Deterministic seed (Faker + random); same seed + volumes -> identical data (default: 42)",
+        help=(
+            "Deterministic seed (Faker + random); "
+            "same seed + volumes -> identical data (default: 42)"
+        ),
     )
     parser.add_argument(
         "--database-url",
@@ -114,15 +117,13 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     print(
-        "generated {customers} customers, {orders} orders, {shipments} shipments, "
-        "{invoices} invoices, {payments} payments (seed={seed})".format(
-            customers=manifest.created.customers,
-            orders=manifest.created.orders,
-            shipments=manifest.created.shipments,
-            invoices=manifest.created.invoices,
-            payments=manifest.created.payments,
-            seed=manifest.seed,
-        )
+        "generated "
+        f"{manifest.created.customers} customers, "
+        f"{manifest.created.orders} orders, "
+        f"{manifest.created.shipments} shipments, "
+        f"{manifest.created.invoices} invoices, "
+        f"{manifest.created.payments} payments "
+        f"(seed={manifest.seed})"
     )
     return 0
 

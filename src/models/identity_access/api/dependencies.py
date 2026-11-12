@@ -16,7 +16,7 @@ research.md Decision 2).
 from __future__ import annotations
 
 import os
-from typing import Callable
+from collections.abc import Callable
 
 import jwt
 from fastapi import Depends, Header, HTTPException, Request, status
@@ -27,11 +27,11 @@ from .permissions import (
     USER_ADMIN,
     USER_BILLING,
     USER_VIEW,
-    WORKFLOW_PERMISSIONS,
     WORKFLOW_CUSTOMER_TO_ORDER,
     WORKFLOW_INVOICE_TO_PAYMENT,
     WORKFLOW_ORDER_TO_INVOICE,
     WORKFLOW_ORDER_TO_SHIPMENT,
+    WORKFLOW_PERMISSIONS,
 )
 
 JWT_ALGORITHM = "HS256"

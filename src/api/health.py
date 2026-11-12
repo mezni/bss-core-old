@@ -18,15 +18,18 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette import status
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from src.infrastructure.logging import CorrelationIdMiddleware
+from src.models.billing_management.api.invoices import router as invoice_router
+from src.models.billing_management.api.payments import router as payment_router
 from src.models.billing_management.domain.exceptions import BillingDomainError
 from src.models.customer_management.api.router import router as customer_router
 from src.models.customer_management.domain.exceptions import CustomerDomainError
 from src.models.order_management.api.router import router as order_router
 from src.models.order_management.domain.exceptions import OrderDomainError
+from src.models.shipment_management.api.shipments import router as shipment_router
 from src.models.shipment_management.domain.exceptions import ShipmentDomainError
 from src.presentation.api.dashboard_endpoints import router as dashboard_router
 
@@ -105,7 +108,10 @@ def register_error_handlers(app: FastAPI) -> None:
     ) -> JSONResponse:
         """Pydantic request validation failures -> 400 VALIDATION_ERROR."""
         summary = "; ".join(
-            "{}: {}".format(".".join(str(part) for part in error.get("loc", [])), error.get("msg", "invalid value"))
+            "{}: {}".format(
+                ".".join(str(part) for part in error.get("loc", [])),
+                error.get("msg", "invalid value"),
+            )
             for error in exc.errors()
         )
         return standard_error_response(
@@ -155,3 +161,6 @@ def health_check_detailed():
 app.include_router(customer_router)
 app.include_router(order_router)
 app.include_router(dashboard_router)
+app.include_router(shipment_router)
+app.include_router(invoice_router)
+app.include_router(payment_router)
