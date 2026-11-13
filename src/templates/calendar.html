@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card sidebar-card p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0" id="calendarMonthYear">Calendar</h3>
+            <p class="text-muted small mb-0">Deadlines synced from Topics and Projects across all roadmaps</p>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-outline-secondary btn-sm" id="prevMonth"><i class="bi bi-chevron-left"></i> Prev</button>
+            <button class="btn btn-outline-secondary btn-sm" id="todayBtn">Today</button>
+            <button class="btn btn-outline-secondary btn-sm" id="nextMonth">Next <i class="bi bi-chevron-right"></i></button>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered mb-0" style="table-layout: fixed;">
+            <thead class="table-light text-center">
+                <tr>
+                    <th>Sun</th>
+                    <th>Mon</th>
+                    <th>Tue</th>
+                    <th>Wed</th>
+                    <th>Thu</th>
+                    <th>Fri</th>
+                    <th>Sat</th>
+                </tr>
+            </thead>
+            <tbody id="calendarBody"></tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentDate = new Date();
+    let allEvents = [];
+
+    async function loadEvents() {
+        const res = await fetch("{{ url_for('calendar_events_api') }}");
+        allEvents = await res.json();
+        renderCalendar();
+    }
+
+    function renderCalendar() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const monthNames = ["January", "February", "March", "April", "May", "June",
+                            "July", "August", "September", "October", "November", "December"];
+        document.getElementById("calendarMonthYear").textContent = `${monthNames[month]} ${year}`;
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const todayStr = new Date().toISOString().split("T")[0];
+
+        const tbody = document.getElementById("calendarBody");
+        tbody.innerHTML = "";
+
+        let dateNum = 1;
+        for (let row = 0; row < 6; row++) {
+            const tr = document.createElement("tr");
+            for (let col = 0; col < 7; col++) {
+                const td = document.createElement("td");
+                td.style.height = "120px";
+                td.style.verticalAlign = "top";
+                td.className = "p-2";
+
+                if ((row === 0 && col < firstDay) || dateNum > daysInMonth) {
+                    td.classList.add("bg-light");
+                } else {
+                    const isoDate = `${year}-${String(month + 1).padStart(2, "0")}-${String(dateNum).padStart(2, "0")}`;
+                    if (isoDate === todayStr) {
+                        td.classList.add("bg-primary-subtle");
+                    }
+
+                    td.innerHTML = `<div class="fw-bold small mb-1">${dateNum}</div>`;
+                    const dayEvents = allEvents.filter(e => e.date === isoDate);
+
+                    dayEvents.forEach(ev => {
+                        const badge = document.createElement("a");
+                        badge.href = `/?roadmap_id=${ev.roadmap_id}`;
+                        badge.className = "d-block text-decoration-none text-white rounded px-1 py-0 mb-1 small text-truncate";
+                        badge.style.backgroundColor = ev.color || "#3b82f6";
+                        badge.title = `[${ev.type}] ${ev.title} (${ev.roadmap})`;
+                        badge.textContent = `${ev.type === "Project" ? "📁" : "📌"} ${ev.title}`;
+                        td.appendChild(badge);
+                    });
+
+                    dateNum++;
+                }
+                tr.appendChild(td);
+            }
+            tbody.appendChild(tr);
+            if (dateNum > daysInMonth) break;
+        }
+    }
+
+    document.getElementById("prevMonth").addEventListener("click", () => {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        renderCalendar();
+    });
+    document.getElementById("nextMonth").addEventListener("click", () => {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        renderCalendar();
+    });
+    document.getElementById("todayBtn").addEventListener("click", () => {
+        currentDate = new Date();
+        renderCalendar();
+    });
+
+    loadEvents();
+</script>
+{% endblock %}

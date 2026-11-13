@@ -1,0 +1,476 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Left Sidebar: Roadmaps List -->
+    <div class="col-lg-3">
+        <div class="card sidebar-card p-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="text-uppercase text-muted fw-bold mb-0 small">Your Roadmaps</h6>
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#newRoadmapModal">
+                    <i class="bi bi-plus-lg"></i> New
+                </button>
+            </div>
+
+            {% if roadmaps %}
+                <div class="d-flex flex-column gap-1">
+                    {% for rm in roadmaps %}
+                        <a href="{{ url_for('index', roadmap_id=rm.id) }}"
+                           class="text-decoration-none text-dark p-2 roadmap-link d-flex justify-content-between align-items-center {{ 'active' if selected_roadmap and rm.id == selected_roadmap.id else '' }}">
+                            <div class="d-flex align-items-center gap-2 text-truncate">
+                                <span class="color-dot" style="background-color: {{ rm.color_hex }};"></span>
+                                <span class="text-truncate">{{ rm.title }}</span>
+                            </div>
+                            <span class="badge bg-secondary-subtle text-dark rounded-pill">{{ rm.progress }}%</span>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted small mb-0">No roadmaps yet. Create one to begin.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="col-lg-9">
+        {% if selected_roadmap %}
+            <!-- Roadmap Header -->
+            <div class="card sidebar-card p-4 mb-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="color-dot" style="background-color: {{ selected_roadmap.color_hex }}; width: 16px; height: 16px;"></span>
+                            <h3 class="fw-bold mb-0">{{ selected_roadmap.title }}</h3>
+                        </div>
+                        {% if selected_roadmap.description %}
+                            <p class="text-muted mb-0">{{ selected_roadmap.description }}</p>
+                        {% endif %}
+                    </div>
+                    <form action="{{ url_for('delete_roadmap', roadmap_id=selected_roadmap.id) }}" method="POST" onsubmit="return confirm('Delete this roadmap and all its stages, topics, projects, and notes?');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-trash"></i> Delete Roadmap
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Overall Progress Bar -->
+                <div class="mt-3">
+                    <div class="d-flex justify-content-between small fw-semibold mb-1">
+                        <span>Overall Completion</span>
+                        <span>{{ selected_roadmap.progress }}%</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar" role="progressbar"
+                             style="width: {{ selected_roadmap.progress }}%; background-color: {{ selected_roadmap.color_hex }};">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs: Stages & Topics | Projects | Notes -->
+            <ul class="nav nav-pills mb-3" id="workspaceTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tab-stages" type="button">
+                        <i class="bi bi-layers me-1"></i> Stages & Topics ({{ selected_roadmap.stages|length }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-projects" type="button">
+                        <i class="bi bi-code-square me-1"></i> Projects ({{ selected_roadmap.projects|length }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-notes" type="button">
+                        <i class="bi bi-journal-text me-1"></i> Notes ({{ selected_roadmap.notes|length }})
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <!-- TAB 1: STAGES & TOPICS -->
+                <div class="tab-pane fade show active" id="tab-stages">
+                    <div class="d-flex justify-content-end mb-3">
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newStageModal">
+                            <i class="bi bi-plus-lg"></i> Add Stage
+                        </button>
+                    </div>
+
+                    {% if selected_roadmap.stages %}
+                        <div class="d-flex flex-column gap-3">
+                            {% for stage in selected_roadmap.stages %}
+                                <div class="card stage-card p-3" style="border-left-color: {{ selected_roadmap.color_hex }};">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <h5 class="fw-bold mb-1">Stage {{ loop.index }}: {{ stage.title }}</h5>
+                                            {% if stage.description %}
+                                                <p class="text-muted small mb-0">{{ stage.description }}</p>
+                                            {% endif %}
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#newTopicModal-{{ stage.id }}">
+                                                <i class="bi bi-plus"></i> Topic
+                                            </button>
+                                            <form action="{{ url_for('delete_stage', stage_id=stage.id) }}" method="POST" onsubmit="return confirm('Delete this stage?');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                            </form>
+                                        </div>
+                                    </div>
+
+                                    <!-- Topics Table -->
+                                    {% if stage.topics %}
+                                        <div class="table-responsive mt-2">
+                                            <table class="table table-hover align-middle mb-0">
+                                                <thead class="table-light small">
+                                                    <tr>
+                                                        <th>Status</th>
+                                                        <th>Topic</th>
+                                                        <th>Priority</th>
+                                                        <th>Due Date</th>
+                                                        <th class="text-end">Action</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for topic in stage.topics %}
+                                                        <tr>
+                                                            <td style="width: 140px;">
+                                                                <form action="{{ url_for('cycle_topic_status', topic_id=topic.id) }}" method="POST">
+                                                                    <button type="submit" class="btn btn-sm w-100
+                                                                        {% if topic.status == 'completed' %}btn-success
+                                                                        {% elif topic.status == 'in_progress' %}btn-warning
+                                                                        {% else %}btn-outline-secondary{% endif %}">
+                                                                        {{ topic.status.replace('_', ' ').title() }}
+                                                                    </button>
+                                                                </form>
+                                                            </td>
+                                                            <td class="{{ 'text-decoration-line-through text-muted' if topic.status == 'completed' else 'fw-medium' }}">
+                                                                {{ topic.title }}
+                                                            </td>
+                                                            <td>
+                                                                <span class="badge
+                                                                    {% if topic.priority == 'high' %}bg-danger-subtle text-danger
+                                                                    {% elif topic.priority == 'medium' %}bg-info-subtle text-info-emphasis
+                                                                    {% else %}bg-secondary-subtle text-secondary{% endif %}">
+                                                                    {{ topic.priority.title() }}
+                                                                </span>
+                                                            </td>
+                                                            <td class="small text-muted">
+                                                                {% if topic.due_date %}
+                                                                    <i class="bi bi-calendar-event me-1"></i>{{ topic.due_date.strftime('%Y-%m-%d') }}
+                                                                {% else %}
+                                                                    —
+                                                                {% endif %}
+                                                            </td>
+                                                            <td class="text-end">
+                                                                <form action="{{ url_for('delete_topic', topic_id=topic.id) }}" method="POST" class="d-inline">
+                                                                    <button type="submit" class="btn btn-sm btn-link text-danger p-0"><i class="bi bi-x-circle"></i></button>
+                                                                </form>
+                                                            </td>
+                                                        </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    {% else %}
+                                        <p class="text-muted small mb-0 mt-2">No topics in this stage yet.</p>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Add Topic Modal for this Stage -->
+                                <div class="modal fade" id="newTopicModal-{{ stage.id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <form class="modal-content" action="{{ url_for('create_topic', stage_id=stage.id) }}" method="POST">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Add Topic to "{{ stage.title }}"</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Topic Title</label>
+                                                    <input type="text" name="title" class="form-control" required placeholder="e.g., SQLAlchemy Relationships & Migrations">
+                                                </div>
+                                                <div class="row g-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Priority</label>
+                                                        <select name="priority" class="form-select">
+                                                            <option value="low">Low</option>
+                                                            <option value="medium" selected>Medium</option>
+                                                            <option value="high">High</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Target Due Date</label>
+                                                        <input type="date" name="due_date" class="form-control">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="submit" class="btn btn-primary">Add Topic</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="card sidebar-card p-5 text-center text-muted">
+                            <p class="mb-2">No stages added yet.</p>
+                            <button class="btn btn-primary btn-sm mx-auto" data-bs-toggle="modal" data-bs-target="#newStageModal">Add First Stage</button>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- TAB 2: PROJECTS -->
+                <div class="tab-pane fade" id="tab-projects">
+                    <div class="d-flex justify-content-end mb-3">
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newProjectModal">
+                            <i class="bi bi-plus-lg"></i> Add Project
+                        </button>
+                    </div>
+
+                    {% if selected_roadmap.projects %}
+                        <div class="row g-3">
+                            {% for proj in selected_roadmap.projects %}
+                                <div class="col-md-6">
+                                    <div class="card sidebar-card p-3 h-100">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h5 class="fw-bold mb-0">{{ proj.title }}</h5>
+                                            <form action="{{ url_for('delete_project', project_id=proj.id) }}" method="POST">
+                                                <button type="submit" class="btn btn-sm btn-link text-danger p-0"><i class="bi bi-trash"></i></button>
+                                            </form>
+                                        </div>
+                                        {% if proj.stage %}
+                                            <span class="badge bg-light text-dark border mb-2 align-self-start">Stage: {{ proj.stage.title }}</span>
+                                        {% endif %}
+                                        <p class="text-muted small mb-2">{{ proj.description or 'No description.' }}</p>
+                                        {% if proj.tech_stack %}
+                                            <p class="small mb-2"><strong>Stack:</strong> {{ proj.tech_stack }}</p>
+                                        {% endif %}
+                                        <div class="mt-auto pt-2 border-top d-flex justify-content-between align-items-center">
+                                            <form action="{{ url_for('cycle_project_status', project_id=proj.id) }}" method="POST">
+                                                <button type="submit" class="btn btn-sm
+                                                    {% if proj.status == 'completed' %}btn-success
+                                                    {% elif proj.status == 'in_progress' %}btn-warning
+                                                    {% else %}btn-outline-secondary{% endif %}">
+                                                    {{ proj.status.replace('_', ' ').title() }}
+                                                </button>
+                                            </form>
+                                            <div class="d-flex align-items-center gap-2 small text-muted">
+                                                {% if proj.due_date %}
+                                                    <span><i class="bi bi-calendar"></i> {{ proj.due_date.strftime('%Y-%m-%d') }}</span>
+                                                {% endif %}
+                                                {% if proj.repo_url %}
+                                                    <a href="{{ proj.repo_url }}" target="_blank" class="btn btn-sm btn-outline-dark"><i class="bi bi-github"></i></a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="card sidebar-card p-5 text-center text-muted">
+                            <p class="mb-0">No projects linked to this roadmap yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- TAB 3: NOTES -->
+                <div class="tab-pane fade" id="tab-notes">
+                    <div class="d-flex justify-content-end mb-3">
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newNoteModal">
+                            <i class="bi bi-plus-lg"></i> Add Note
+                        </button>
+                    </div>
+
+                    {% if selected_roadmap.notes %}
+                        <div class="d-flex flex-column gap-3">
+                            {% for note in selected_roadmap.notes %}
+                                <div class="card sidebar-card p-3">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <h5 class="fw-bold mb-1">{{ note.title }}</h5>
+                                            <div class="d-flex gap-2 small text-muted">
+                                                <span>Updated {{ note.updated_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                                                {% if note.stage %}<span class="badge bg-light text-dark border">Stage: {{ note.stage.title }}</span>{% endif %}
+                                                {% if note.topic %}<span class="badge bg-light text-dark border">Topic: {{ note.topic.title }}</span>{% endif %}
+                                            </div>
+                                        </div>
+                                        <form action="{{ url_for('delete_note', note_id=note.id) }}" method="POST">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                        </form>
+                                    </div>
+                                    <hr class="my-2">
+                                    <div class="note-content">{{ note.content }}</div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="card sidebar-card p-5 text-center text-muted">
+                            <p class="mb-0">No study notes added yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <div class="card sidebar-card p-5 text-center">
+                <h4 class="fw-bold">Welcome to Roadmap Tracker</h4>
+                <p class="text-muted">Create your first learning roadmap to organize stages, topics, projects, notes, and deadlines.</p>
+                <button class="btn btn-primary mx-auto" data-bs-toggle="modal" data-bs-target="#newRoadmapModal">
+                    <i class="bi bi-plus-lg"></i> Create First Roadmap
+                </button>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- MODAL: New Roadmap -->
+<div class="modal fade" id="newRoadmapModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form class="modal-content" action="{{ url_for('create_roadmap') }}" method="POST">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Roadmap</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Title</label>
+                    <input type="text" name="title" class="form-control" required placeholder="e.g., AI Systems Architect">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Description</label>
+                    <textarea name="description" class="form-control" rows="2" placeholder="Goal and scope of this roadmap..."></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Accent Color</label>
+                    <input type="color" name="color_hex" class="form-control form-control-color" value="#3b82f6">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Create Roadmap</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if selected_roadmap %}
+<!-- MODAL: New Stage -->
+<div class="modal fade" id="newStageModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form class="modal-content" action="{{ url_for('create_stage', roadmap_id=selected_roadmap.id) }}" method="POST">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Stage</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Stage Title</label>
+                    <input type="text" name="title" class="form-control" required placeholder="e.g., Phase 1: Foundations">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Description</label>
+                    <textarea name="description" class="form-control" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Add Stage</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: New Project -->
+<div class="modal fade" id="newProjectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form class="modal-content" action="{{ url_for('create_project', roadmap_id=selected_roadmap.id) }}" method="POST">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Project</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Project Title</label>
+                    <input type="text" name="title" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Link to Stage (Optional)</label>
+                    <select name="stage_id" class="form-select">
+                        <option value="">-- General Roadmap Project --</option>
+                        {% for s in selected_roadmap.stages %}
+                            <option value="{{ s.id }}">{{ s.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Description</label>
+                    <textarea name="description" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Tech Stack</label>
+                        <input type="text" name="tech_stack" class="form-control" placeholder="Python, Flask, SQLite">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Target Due Date</label>
+                        <input type="date" name="due_date" class="form-control">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Repository URL</label>
+                    <input type="url" name="repo_url" class="form-control" placeholder="https://github.com/...">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Save Project</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: New Note -->
+<div class="modal fade" id="newNoteModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <form class="modal-content" action="{{ url_for('create_note', roadmap_id=selected_roadmap.id) }}" method="POST">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Note</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Note Title</label>
+                    <input type="text" name="title" class="form-control" required>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Attach to Stage (Optional)</label>
+                        <select name="stage_id" class="form-select">
+                            <option value="">-- None --</option>
+                            {% for s in selected_roadmap.stages %}
+                                <option value="{{ s.id }}">{{ s.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Attach to Topic (Optional)</label>
+                        <select name="topic_id" class="form-select">
+                            <option value="">-- None --</option>
+                            {% for s in selected_roadmap.stages %}
+                                {% for t in s.topics %}
+                                    <option value="{{ t.id }}">{{ s.title }} → {{ t.title }}</option>
+                                {% endfor %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Content</label>
+                    <textarea name="content" class="form-control" rows="6" required placeholder="Write your study notes, key takeaways, or references..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Save Note</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

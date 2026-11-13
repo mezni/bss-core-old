@@ -1,0 +1,11 @@
+[project]
+name = "roadmap-tracker"
+version = "0.1.0"
+description = "Personal Roadmap, Notes, Projects, and Calendar Tracker"
+requires-python = ">=3.12"
+dependencies = [
+    "flask>=3.1.0",
+    "flask-sqlalchemy>=3.1.1",
+    "python-dotenv>=1.0.1",
+    "ruff>=0.17.5",
+]
