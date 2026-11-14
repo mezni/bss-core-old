@@ -186,6 +186,18 @@ def create_roadmap():
     return redirect(url_for("index"))
 
 
+@app.route("/roadmap/<int:roadmap_id>/edit", methods=["POST"])
+def edit_roadmap(roadmap_id: int):
+    roadmap = db.get_or_404(Roadmap, roadmap_id)
+    title = request.form.get("title", "").strip()
+    if title:
+        roadmap.title = title
+        roadmap.description = request.form.get("description", "").strip()
+        roadmap.color_hex = request.form.get("color_hex", roadmap.color_hex)
+        db.session.commit()
+    return redirect(url_for("index", roadmap_id=roadmap.id))
+
+
 @app.route("/roadmap/<int:roadmap_id>/delete", methods=["POST"])
 def delete_roadmap(roadmap_id: int):
     roadmap = db.get_or_404(Roadmap, roadmap_id)
@@ -210,6 +222,17 @@ def create_stage(roadmap_id: int):
         db.session.add(stage)
         db.session.commit()
     return redirect(url_for("index", roadmap_id=roadmap.id))
+
+
+@app.route("/stage/<int:stage_id>/edit", methods=["POST"])
+def edit_stage(stage_id: int):
+    stage = db.get_or_404(Stage, stage_id)
+    title = request.form.get("title", "").strip()
+    if title:
+        stage.title = title
+        stage.description = request.form.get("description", "").strip()
+        db.session.commit()
+    return redirect(url_for("index", roadmap_id=stage.roadmap_id))
 
 
 @app.route("/stage/<int:stage_id>/delete", methods=["POST"])
@@ -239,6 +262,19 @@ def create_topic(stage_id: int):
         db.session.add(topic)
         db.session.commit()
     return redirect(url_for("index", roadmap_id=stage.roadmap_id))
+
+
+@app.route("/topic/<int:topic_id>/edit", methods=["POST"])
+def edit_topic(topic_id: int):
+    topic = db.get_or_404(Topic, topic_id)
+    title = request.form.get("title", "").strip()
+    if title:
+        topic.title = title
+        topic.status = request.form.get("status", topic.status)
+        topic.priority = request.form.get("priority", topic.priority)
+        topic.due_date = parse_date(request.form.get("due_date"))
+        db.session.commit()
+    return redirect(url_for("index", roadmap_id=topic.stage.roadmap_id))
 
 
 @app.route("/topic/<int:topic_id>/cycle-status", methods=["POST"])
@@ -291,6 +327,27 @@ def create_project(roadmap_id: int):
     return redirect(url_for("index", roadmap_id=roadmap.id))
 
 
+@app.route("/project/<int:project_id>/edit", methods=["POST"])
+def edit_project(project_id: int):
+    project = db.get_or_404(Project, project_id)
+    title = request.form.get("title", "").strip()
+    if title:
+        stage_id = request.form.get("stage_id", type=int)
+        project.title = title
+        project.description = request.form.get("description", "").strip()
+        project.stage_id = (
+            stage_id
+            if stage_id and db.session.get(Stage, stage_id)
+            else None
+        )
+        project.status = request.form.get("status", project.status)
+        project.tech_stack = request.form.get("tech_stack", "").strip()
+        project.repo_url = request.form.get("repo_url", "").strip()
+        project.due_date = parse_date(request.form.get("due_date"))
+        db.session.commit()
+    return redirect(url_for("index", roadmap_id=project.roadmap_id))
+
+
 @app.route("/project/<int:project_id>/cycle-status", methods=["POST"])
 def cycle_project_status(project_id: int):
     project = db.get_or_404(Project, project_id)
@@ -333,6 +390,26 @@ def create_note(roadmap_id: int):
         db.session.add(note)
         db.session.commit()
     return redirect(url_for("index", roadmap_id=roadmap.id))
+
+
+@app.route("/note/<int:note_id>/edit", methods=["POST"])
+def edit_note(note_id: int):
+    note = db.get_or_404(Note, note_id)
+    title = request.form.get("title", "").strip()
+    content = request.form.get("content", "").strip()
+    if title and content:
+        stage_id = request.form.get("stage_id", type=int)
+        topic_id = request.form.get("topic_id", type=int)
+        note.title = title
+        note.content = content
+        note.stage_id = (
+            stage_id if stage_id and db.session.get(Stage, stage_id) else None
+        )
+        note.topic_id = (
+            topic_id if topic_id and db.session.get(Topic, topic_id) else None
+        )
+        db.session.commit()
+    return redirect(url_for("index", roadmap_id=note.roadmap_id))
 
 
 @app.route("/note/<int:note_id>/delete", methods=["POST"])
@@ -385,6 +462,138 @@ def calendar_events_api():
             }
         )
     return jsonify(events)
+
+import json
+from flask import Response, flash
+
+# --- JSON Backup & Import Routes ---
+@app.route("/api/export/json")
+def export_json():
+  roadmaps = Roadmap.query.all()
+  data = []
+  
+  for rm in roadmaps:
+    rm_dict = {
+      "title": rm.title,
+      "description": rm.description,
+      "color_hex": rm.color_hex,
+      "stages": [],
+      "projects": [],
+      "notes": []
+    }
+    
+    for s in rm.stages:
+      s_dict = {
+        "title": s.title,
+        "description": s.description,
+        "position": s.position,
+        "topics": [{
+          "title": t.title,
+          "status": t.status,
+          "priority": t.priority,
+          "due_date": t.due_date.isoformat() if t.due_date else None,
+          "position": t.position
+        } for t in s.topics]
+      }
+      rm_dict["stages"].append(s_dict)
+      
+    for p in rm.projects:
+      rm_dict["projects"].append({
+        "title": p.title,
+        "description": p.description,
+        "status": p.status,
+        "tech_stack": p.tech_stack,
+        "repo_url": p.repo_url,
+        "due_date": p.due_date.isoformat() if p.due_date else None
+      })
+      
+    for n in rm.notes:
+      rm_dict["notes"].append({
+        "title": n.title,
+        "content": n.content
+      })
+      
+    data.append(rm_dict)
+
+  json_data = json.dumps(data, indent=2)
+  return Response(
+    json_data,
+    mimetype="application/json",
+    headers={"Content-Disposition": "attachment;filename=roadmap_backup.json"}
+  )
+
+@app.route("/roadmap/import", methods=["POST"])
+def import_json():
+  file = request.files.get("file")
+  if not file:
+    return redirect(url_for("index"))
+    
+  try:
+    content = file.read().decode("utf-8")
+    data = json.loads(content)
+    
+    if not isinstance(data, list):
+      data = [data]
+      
+    for rm_data in data:
+      roadmap = Roadmap(
+        title=rm_data.get("title", "Imported Roadmap"),
+        description=rm_data.get("description"),
+        color_hex=rm_data.get("color_hex", "#3b82f6")
+      )
+      db.session.add(roadmap)
+      db.session.flush() # Get roadmap.id
+      
+      # Map stage titles to new stage objects for notes/projects reference if needed
+      stage_map = {}
+      for s_data in rm_data.get("stages", []):
+        stage = Stage(
+          roadmap_id=roadmap.id,
+          title=s_data.get("title", "Stage"),
+          description=s_data.get("description"),
+          position=s_data.get("position", 0)
+        )
+        db.session.add(stage)
+        db.session.flush()
+        stage_map[stage.title] = stage.id
+        
+        for t_data in s_data.get("topics", []):
+          topic = Topic(
+            stage_id=stage.id,
+            title=t_data.get("title", "Topic"),
+            status=t_data.get("status", "not_started"),
+            priority=t_data.get("priority", "medium"),
+            due_date=parse_date(t_data.get("due_date")),
+            position=t_data.get("position", 0)
+          )
+          db.session.add(topic)
+          
+      for p_data in rm_data.get("projects", []):
+        project = Project(
+          roadmap_id=roadmap.id,
+          title=p_data.get("title", "Project"),
+          description=p_data.get("description"),
+          status=p_data.get("status", "planned"),
+          tech_stack=p_data.get("tech_stack"),
+          repo_url=p_data.get("repo_url"),
+          due_date=parse_date(p_data.get("due_date"))
+        )
+        db.session.add(project)
+        
+      for n_data in rm_data.get("notes", []):
+        note = Note(
+          roadmap_id=roadmap.id,
+          title=n_data.get("title", "Note"),
+          content=n_data.get("content", "")
+        )
+        db.session.add(note)
+        
+    db.session.commit()
+  except Exception as e:
+    db.session.rollback()
+    print(f"Import error: {e}")
+    
+  return redirect(url_for("index"))
 
 
 if __name__ == "__main__":
